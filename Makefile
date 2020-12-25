@@ -11,10 +11,18 @@ SHELL := /bin/bash
 	init_all \
 	format_all \
 	lint_all \
+	prepare_saleor_sources \
 	build_saleor_core \
+	build_saleor_core_dev \
+	build_saleor_dashboard \
+	build_saleor_storefront \
 	push_saleor_core \
+	push_saleor_core_dev \
+	push_saleor_dashboard \
+	push_saleor_storefront \
 	get_image \
 	get_image_version
+
 
 ## Dependency installation targets
 
@@ -70,15 +78,53 @@ lint_all: init_all
 	./scripts/make.sh lint_dockerfiles
 
 get_image:
-	@./scripts/make.sh get_image saleor_core
+	@if test -z "$(FILTER)"; then \
+		echo "env variable FILTER is required" && \
+		exit 1; \
+	fi;
+	@./scripts/make.sh get_image "${FILTER}"
+	unset FILTER
 
 get_image_version:
-	@./scripts/make.sh get_image_version
+	@if test -z "$(SALEOR_REPO)"; then \
+		echo "env variable SALEOR_REPO is required" && \
+		exit 1; \
+	fi;
+	@./scripts/make.sh get_image_version "${SALEOR_REPO}"
+	unset SALEOR_REPO
 
-build_saleor_core:
+push_image:
+	@if test -z "$(IMAGE_VERSION)"; then \
+		echo "env variable IMAGE_VERSION is required" && \
+		exit 1; \
+	fi;
+	@if test -z "$(DOCKER_REPO)"; then \
+		echo "env variable DOCKER_REPO is required" && \
+		exit 1; \
+	fi;
+	@./scripts/make.sh push_image "${IMAGE_VERSION}" "${DOCKER_REPO}" "${FORCE_PUSH}"
+	unset IMAGE_VERSION
+	unset DOCKER_REPO
+
+prepare_saleor_sources:
+	./scripts/make.sh prepare_saleor_source \
+		"https://github.com/mirumee/saleor.git" \
+		"Core.Dockerfile" && \
+	./scripts/make.sh prepare_saleor_source \
+		"https://github.com/mirumee/saleor.git" \
+		"Core.Dev.Dockerfile" && \
+	./scripts/make.sh prepare_saleor_source \
+		"https://github.com/mirumee/saleor-dashboard.git" \
+		"Dashboard.Dockerfile" && \
+	./scripts/make.sh prepare_saleor_source \
+		"https://github.com/mirumee/saleor-storefront.git" \
+		"Storefront.Dockerfile"
+
+build_saleor_core: prepare_saleor_sources
 	./scripts/make.sh set_env_saleor_core
-	./scripts/make.sh prepare_saleor_source "https://github.com/mirumee/saleor.git" "Core.Dockerfile"
 	docker-compose build saleor_core
+	docker image ls
+	make -s get_image FILTER=saleor_core
 	docker run \
 		--rm "$$(make -s get_image FILTER=saleor_core)" \
 		/bin/bash -c 'echo "build ok"' || \
@@ -87,10 +133,11 @@ build_saleor_core:
 		"$$(make -s get_image FILTER=saleor_core)"
 	rm .env
 
-build_saleor_core_dev:
+build_saleor_core_dev: prepare_saleor_sources
 	./scripts/make.sh set_env_saleor_core_dev
-	./scripts/make.sh prepare_saleor_source "https://github.com/mirumee/saleor.git" "Core.Dev.Dockerfile"
 	docker-compose build saleor_core_dev
+	docker image ls
+	make -s get_image FILTER=saleor_core_dev
 	docker run \
 		--rm "$$(make -s get_image FILTER=saleor_core_dev)" \
 		/bin/bash -c 'echo "build ok"' || \
@@ -99,10 +146,11 @@ build_saleor_core_dev:
 		"$$(make -s get_image FILTER=saleor_core_dev)"
 	rm .env
 
-build_saleor_dashboard:
+build_saleor_dashboard: prepare_saleor_sources
 	./scripts/make.sh set_env_saleor_dashboard
-	./scripts/make.sh prepare_saleor_source "https://github.com/mirumee/saleor-dashboard.git" "Dashboard.Dockerfile"
 	docker-compose build saleor_dashboard
+	docker image ls
+	make -s get_image FILTER=saleor_dashboard
 	docker run \
 		--rm "$$(make -s get_image FILTER=saleor_dashboard)" \
 		/bin/bash -c 'echo "build ok"' || \
@@ -111,10 +159,11 @@ build_saleor_dashboard:
 		"$$(make -s get_image FILTER=saleor_dashboard)"
 	rm .env
 
-build_saleor_storefront:
+build_saleor_storefront: prepare_saleor_sources
 	./scripts/make.sh set_env_saleor_storefront
-	./scripts/make.sh prepare_saleor_source "https://github.com/mirumee/saleor-storefront.git" "Dashboard.Dockerfile"
 	docker-compose build saleor_storefront
+	docker image ls
+	make -s get_image FILTER=saleor_storefront
 	docker run \
 		--rm "$$(make -s get_image FILTER=saleor_storefront)" \
 		/bin/bash -c 'echo "build ok"' || \
@@ -123,19 +172,78 @@ build_saleor_storefront:
 		"$$(make -s get_image FILTER=saleor_storefront)"
 	rm .env
 
-#push_saleor_core:
-#	@if test -z "$(REGISTRY_TOKEN)"; then \
-#		echo "env variable REGISTRY_TOKEN is required" && \
-#		exit 1; \
-#	fi;
-#	docker tag \
-#		"$$(make -s get_image FILTER=saleor_core)" \
-#		"ghcr.io/eirenauts/saleor-core:$$(make -s get_image_version)"
-#	docker tag \
-#		"$$(make -s get_image FILTER=saleor_core)" \
-#		"ghcr.io/eirenauts/saleor-core:latest"
-#	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
-#	docker push "ghcr.io/eirenauts/saleor-core:$$(make -s get_image_version)"
-#	docker push "ghcr.io/eirenauts/saleor-core:latest"
-#	docker logout ghcr.io
-#	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi
+push_saleor_core:
+	@if test -z "$(REGISTRY_TOKEN)"; then \
+		echo "env variable REGISTRY_TOKEN is required" && \
+		exit 1; \
+	fi;
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_core)" \
+		"ghcr.io/eirenauts/saleor-core:$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)"
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_core)" \
+		"ghcr.io/eirenauts/saleor-core:latest"
+	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
+	make -s push_image \
+		IMAGE_VERSION="$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)" \
+		DOCKER_REPO=saleor-core \
+		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
+	docker logout ghcr.io
+	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi
+
+push_saleor_core_dev:
+	@if test -z "$(REGISTRY_TOKEN)"; then \
+		echo "env variable REGISTRY_TOKEN is required" && \
+		exit 1; \
+	fi;
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_core_dev)" \
+		"ghcr.io/eirenauts/saleor-core:dev-$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)"
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_core_dev)" \
+		"ghcr.io/eirenauts/saleor-core:dev-latest"
+	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
+	make -s push_image \
+		IMAGE_VERSION="$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)" \
+		DOCKER_REPO=saleor-core \
+		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
+	docker logout ghcr.io
+	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi
+
+push_saleor_dashboard:
+	@if test -z "$(REGISTRY_TOKEN)"; then \
+		echo "env variable REGISTRY_TOKEN is required" && \
+		exit 1; \
+	fi;
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_dashboard)" \
+		"ghcr.io/eirenauts/saleor-dashboard:$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor-dashboard.git)"
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_dashboard)" \
+		"ghcr.io/eirenauts/saleor-dashboard:latest"
+	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
+	make -s push_image \
+		IMAGE_VERSION="$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor-dashboard.git)" \
+		DOCKER_REPO=saleor-dashboard \
+		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
+	docker logout ghcr.io
+	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi
+
+push_saleor_storefront:
+	@if test -z "$(REGISTRY_TOKEN)"; then \
+		echo "env variable REGISTRY_TOKEN is required" && \
+		exit 1; \
+	fi;
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_storefront)" \
+		"ghcr.io/eirenauts/saleor-storefront:$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor-storefront.git)"
+	docker tag \
+		"$$(make -s get_image FILTER=saleor_storefront)" \
+		"ghcr.io/eirenauts/saleor-storefront:latest"
+	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
+	make -s push_image \
+		IMAGE_VERSION="$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor-storefront.git)" \
+		DOCKER_REPO=saleor-storefront \
+		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
+	docker logout ghcr.io
+	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi

@@ -23,17 +23,17 @@ services:
         UID: 1001
         GUID: 1001
 
-  saleor_core_dashboard:
+  saleor_dashboard:
     build:
-      context: ./saleor_core_dashboard
+      context: ./saleor_dashboard
       dockerfile: Dockerfile
       args:
         SHORT_SHA: ${SHORT_SHA}
         VERSION: ${VERSION}
 
-  saleor_core_storefront:
+  saleor_storefront:
     build:
-      context: ./saleor_core_storefront
+      context: ./saleor_storefront
       dockerfile: Dockerfile
       args:
         SHORT_SHA: ${SHORT_SHA}

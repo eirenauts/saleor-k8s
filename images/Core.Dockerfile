@@ -56,7 +56,7 @@ WORKDIR /app
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 RUN \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends --allow-downgrades \
       libxml2='2.9.4+dfsg1-7+deb10u1' \
       libssl1.1='1.1.1d-0+deb10u3' \
       libcairo2='1.16.0-4' \

@@ -219,6 +219,26 @@ function get_git_tag() {
     git tag --points-at HEAD 2>/dev/null || echo ""
 }
 
+function get_branch_from_azure_devops_ci() {
+    if [[ -n "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" ]]; then
+        sed --regexp-extended 's|refs/heads/||g' <<<"${SYSTEM_PULLREQUEST_SOURCEBRANCH}"
+    elif [[ -n "${BUILD_SOURCEBRANCH}" ]]; then
+        sed --regexp-extended 's|refs/heads/||g' <<<"${BUILD_SOURCEBRANCH}"
+    fi
+}
+
+function get_git_branch() {
+    if [[ -z "$(get_branch_from_azure_devops_ci)" ]]; then
+        git branch --show-current
+    else
+        get_branch_from_azure_devops_ci
+    fi
+}
+
+function get_redacted_git_branch() {
+    sed --regexp-extended 's|\W|-|g' <<<"$(get_git_branch)"
+}
+
 function get_image_version() {
     local saleor_repo="${1}"
     local branch
@@ -227,6 +247,8 @@ function get_image_version() {
         echo "Variable saleor_repo is required" >>/dev/stderr
         return
     fi
+
+    branch="$(get_redacted_git_branch)"
 
     required_version="$(get_required_app_version "${saleor_repo}")"
 
@@ -305,12 +327,13 @@ function prepare_saleor_source() {
     working_dir="$(get_working_directory "${dockerfile}")"
 
     if [[ -d "./${working_dir}" ]]; then
+        echo "Removing ./${working_dir}"
         rm -rf "./${working_dir}"
     fi
 
     saleor_release="$(get_required_app_version "${saleor_repo}")"
 
-    echo "Checking out version ${saleor_release} of saleor"
+    echo "Checking out version ${saleor_release} of ${saleor_repo}"
     git clone "${saleor_repo}" "./${working_dir}" &&
         cd "./${working_dir}" &&
         git checkout "${saleor_release}" &&
@@ -318,9 +341,36 @@ function prepare_saleor_source() {
             echo "Copying gunicorn config file into saleor repo" &&
                 cp ../images/config/gunicorn_conf.py "./saleor/gunicorn_conf.py"
             echo "Removing unecessary static files" &&
-            rm ./saleor/static/populatedb_data.json &&
-            rm -rf ./saleor/static/placeholders
+                rm ./saleor/static/populatedb_data.json &&
+                rm -rf ./saleor/static/placeholders
         fi &&
         cp "../images/${dockerfile}" ./Dockerfile &&
         cat Dockerfile
+}
+
+function push_image() {
+    local image_version="${1}"
+    local docker_repo="${2}"
+    local force_push="${3}"
+
+    if [[ -z "${image_version}" ]]; then
+        echo "Variable image_version is required" >>/dev/stderr
+        return
+    fi
+
+    if [[ -z "${docker_repo}" ]]; then
+        echo "Variable docker_repo is required" >>/dev/stderr
+        return
+    fi
+
+    if [[ -n "${force_push}" ]]; then
+        echo "Force pushing images"
+        docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
+            docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+    else
+        docker manifest inspect "ghcr.io/eirenauts/${docker_repo}:${image_version}" >/dev/null 2>&1 &&
+            echo "Image already exists, skipping push" ||
+            docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
+            docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+    fi
 }

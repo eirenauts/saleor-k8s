@@ -2,6 +2,7 @@
 node_modules
 .env
 saleor_core
+saleor_core_dev
 saleor_dashboard
 saleor_storefront
 charts/saleor-platform/charts

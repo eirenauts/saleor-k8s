@@ -1,22 +1,19 @@
 # @format
 ---
 stages:
-  - stage: Build
-    displayName: Build images
-    condition: and(
-      ne(variables['Build.SourceBranch'], 'refs/heads/master'),
-      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
-      )
+  - stage: Push
+    displayName: Push images
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
     dependsOn: []
     jobs:
-      - job: build_saleor_core
-        displayName: Build saleor-core image
+      - job: push_saleor_core
+        displayName: Push saleor-core image
         condition: always()
         steps:
           - template: ../init_step.yaml
 
           - task: Bash@3
-            displayName: Build saleor-core image
+            displayName: Push saleor-core image
             inputs:
               targetType: "inline"
               workingDirectory: "$(Build.Repository.LocalPath)"
@@ -25,15 +22,19 @@ stages:
               noRc: true
               script: |
                 make build_saleor_core
+                make push_saleor_core
+            env:
+              REGISTRY_TOKEN: $(registryToken)
+              FORCE_PUSH_IMAGES: $(forcePush)
 
-      - job: build_saleor_core_dev
-        displayName: Build saleor-core-dev image
+      - job: push_saleor_core_dev
+        displayName: Push saleor-core-dev image
         condition: always()
         steps:
           - template: ../init_step.yaml
 
           - task: Bash@3
-            displayName: Build saleor-core-dev image
+            displayName: Push saleor-core-dev image
             inputs:
               targetType: "inline"
               workingDirectory: "$(Build.Repository.LocalPath)"
@@ -42,15 +43,19 @@ stages:
               noRc: true
               script: |
                 make build_saleor_core_dev
+                make push_saleor_core_dev
+            env:
+              REGISTRY_TOKEN: $(registryToken)
+              FORCE_PUSH_IMAGES: $(forcePush)
 
-      - job: build_saleor_dashboard
-        displayName: Build saleor-dashboard image
+      - job: push_saleor_dashboard
+        displayName: Push saleor-dashboard image
         condition: always()
         steps:
           - template: ../init_step.yaml
 
           - task: Bash@3
-            displayName: Build saleor-dashboard image
+            displayName: Push saleor-dashboard image
             inputs:
               targetType: "inline"
               workingDirectory: "$(Build.Repository.LocalPath)"
@@ -59,15 +64,19 @@ stages:
               noRc: true
               script: |
                 make build_saleor_dashboard
+                make push_saleor_dashboard
+            env:
+              REGISTRY_TOKEN: $(registryToken)
+              FORCE_PUSH_IMAGES: $(forcePush)
 
-      - job: build_saleor_storefront
-        displayName: Build saleor-storefront image
+      - job: push_saleor_storefront
+        displayName: Push saleor-storefront image
         condition: always()
         steps:
           - template: ../init_step.yaml
 
           - task: Bash@3
-            displayName: Build saleor-storefront image
+            displayName: Push saleor-storefront image
             inputs:
               targetType: "inline"
               workingDirectory: "$(Build.Repository.LocalPath)"
@@ -76,3 +85,7 @@ stages:
               noRc: true
               script: |
                 make build_saleor_storefront
+                make push_saleor_storefront
+            env:
+              REGISTRY_TOKEN: $(registryToken)
+              FORCE_PUSH_IMAGES: $(forcePush)

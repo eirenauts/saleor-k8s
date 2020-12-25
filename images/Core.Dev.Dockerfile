@@ -46,7 +46,7 @@ LABEL \
     \
     org.opencontainers.image.title="saleor-core"                                          \
     org.opencontainers.image.description="Docker image for saleor core k8s containers"    \
-    org.opencontainers.image.url="ghcr.io/eirenauts/saleor-core:dev-${VERSION}"           \
+    org.opencontainers.image.url="ghcr.io/eirenauts/saleor-core:${VERSION}"           \
     org.opencontainers.image.source="https://github.com/mirumee/saleor"                   \
     org.opencontainers.image.revision="${SHORT_SHA}"                                      \
     org.opencontainers.image.version="${VERSION}"                                         \
@@ -63,7 +63,7 @@ RUN \
     \
     \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends --allow-downgrades \
       libxml2='2.9.4+dfsg1-7+deb10u1' \
       libssl1.1='1.1.1d-0+deb10u3' \
       libcairo2='1.16.0-4' \

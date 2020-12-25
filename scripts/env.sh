@@ -13,7 +13,15 @@ function set_env_saleor_core() {
 }
 
 function set_env_saleor_core_dev() {
-    set_env_saleor_core
+    if [[ -e .env ]]; then
+        rm .env &&
+            touch .env
+    fi
+
+    {
+        echo "SHORT_SHA=$(get_short_sha)"
+        echo "VERSION=dev-$(get_image_version https://github.com/mirumee/saleor.git)"
+    } >>.env
 }
 
 function set_env_saleor_dashboard() {
@@ -24,7 +32,7 @@ function set_env_saleor_dashboard() {
 
     {
         echo "SHORT_SHA=$(get_short_sha)"
-        echo "VERSION=dev-$(get_image_version https://github.com/mirumee/saleor-dashboard.git)"
+        echo "VERSION=$(get_image_version https://github.com/mirumee/saleor-dashboard.git)"
     } >>.env
 }
 
@@ -36,6 +44,6 @@ function set_env_saleor_storefront() {
 
     {
         echo "SHORT_SHA=$(get_short_sha)"
-        echo "VERSION=dev-$(get_image_version https://github.com/mirumee/saleor-storefront.git)"
+        echo "VERSION=$(get_image_version https://github.com/mirumee/saleor-storefront.git)"
     } >>.env
 }
