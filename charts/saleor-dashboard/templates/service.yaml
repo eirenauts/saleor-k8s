@@ -1,0 +1,15 @@
+# @format
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{include "saleor-dashboard.fullname" .}}
+  labels: {{- include "saleor-dashboard.labels" . | nindent 4}}
+spec:
+  type: {{.Values.service.type}}
+  ports:
+    - port: {{.Values.service.port}}
+      targetPort: {{.Values.port}}
+      protocol: TCP
+      name: http
+  selector: {{- include "saleor-dashboard.selectorLabels" . | nindent 4}}

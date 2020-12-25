@@ -1,0 +1,21 @@
+# @format
+
+# TODO
+
+postgresql:
+  enabled: true
+
+redis:
+  enabled: true
+
+nfs-server-provisioner:
+  enabled: true
+
+saleor-core:
+  enabled: true
+
+saleor-storefront:
+  enabled: true
+
+saleor-dashboard:
+  enabled: true

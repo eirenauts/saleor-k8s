@@ -1,0 +1,17 @@
+{
+  "overrides": [
+    {
+      "files": "*.yaml",
+      "options": {
+        "bracketSpacing": false,
+        "singleQuote": false,
+        "printWidth": 120,
+        "insertPragma": true
+      }
+    },
+    {
+      "files": "*.md",
+      "options": {}
+    }
+  ]
+}

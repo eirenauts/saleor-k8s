@@ -1,0 +1,84 @@
+# @format
+
+apiVersion: v2
+name: saleor-platform
+description: A Helm chart for deploying the entire umbrella of saleor charts
+type: application
+version: 0.1.0
+appVersion: 2.11.1
+kubeVersion: ">=1.9.0"
+keywords:
+  - saleor
+  - ecommerce
+  - graphql
+  - django
+  - single page app
+home: https://github.com/eirenauts/saleor-k8s
+sources:
+  - https://github.com/mirumee/saleor
+  - https://github.com/eirenauts/saleor-k8s
+maintainers:
+  - name: Stephen Moloney
+    email: stephen@stephenmoloney.com
+    url: stephenmoloney.com
+
+dependencies:
+  ## Notes: required if not using an alternative postgresql instance
+  - name: postgresql
+    version: "9.8.11"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+    tags:
+      - database
+
+  ## Notes: required if not using an alternative redis instance
+  - name: redis
+    version: "12.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+    tags:
+      - cache
+
+  ## Notes: required if not using one of the following:
+  ## 1. cloud storage (this can be minio) as a backend for the system static and media files
+  ## 2. an alternative persistent volume that supports readwritemany
+  - name: nfs-server-provisioner
+    version: "1.1.1"
+    repository: "https://kvaps.github.io/charts"
+    condition: nfs.enabled
+    tags:
+      - nfs
+
+  ## Notes: A backend consisting of multiple parts:
+  ## 1. Pods for the graphql api server and application workhorse
+  ## 2. Pods for the web server (for static assets and media assets) if not using cloud storage
+  ## 3. Pods for the celery workers which execute particular tasks on demand
+  - name: saleor-core
+    version: "1.0.0"
+    # repository: "https://rg.fr-par.scw.cloud/private-helm-repo-scw-prod/saleor-core"
+    repository: "file:///home/u1/Documents/repos/saleor-components/saleor-k8s-intermediate/charts/saleor-core"
+    condition: saleor-core.enabled
+    tags:
+      - workers
+      - api
+      - web
+
+  ## Notes: This is a web server of pre-built static assets and emails for the storefront which customers see
+  - name: saleor-storefront
+    version: "1.0.0"
+    # repository: "https://rg.fr-par.scw.cloud/private-helm-repo-scw-prod/saleor-storefront"
+    repository: "file:///home/u1/Documents/repos/saleor-components/saleor-k8s-intermediate/charts/saleor-storefront"
+    condition: saleor-storefront.enabled
+    tags:
+      - ui
+      - storefront
+
+  ## Notes: This is a web server of pre-built static assets for the administrative dashboard
+  - name: saleor-dashboard
+    version: "1.0.0"
+    # repository: "https://rg.fr-par.scw.cloud/private-helm-repo-scw-prod/saleor-dashboard"
+    repository: "file:///home/u1/Documents/repos/saleor-components/saleor-k8s-intermediate/charts/saleor-dashboard"
+    condition: saleor-dashboard.enabled
+    tags:
+      - ui
+      - dashboard

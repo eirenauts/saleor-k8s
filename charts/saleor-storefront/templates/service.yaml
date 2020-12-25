@@ -1,0 +1,15 @@
+# @format
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{include "saleor-storefront.fullname" .}}
+  labels: {{- include "saleor-storefront.labels" . | nindent 4}}
+spec:
+  type: {{.Values.service.type}}
+  ports:
+    - port: {{.Values.service.port}}
+      targetPort: {{.Values.port}}
+      protocol: TCP
+      name: http
+  selector: {{- include "saleor-storefront.selectorLabels" . | nindent 4}}

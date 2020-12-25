@@ -1,0 +1,2 @@
+# Allow indirectly referenced variables
+disable=SC2034

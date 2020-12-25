@@ -1,0 +1,99 @@
+{{- $topLevelScope := . }}
+{{- $thisJob := .Values.jobs.init.createUsers }}
+{{- if and (eq $thisJob.enabled true) (gt (len $thisJob.users) 0) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: 0{{ $thisJob.weight }}-{{ include "saleor-core.fullname" . }}-db-create-users
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": {{ $thisJob.weight | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  activeDeadlineSeconds: {{ default 300 $thisJob.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ default 600 $thisJob.ttlSecondsAfterFinished }}
+  backoffLimit: {{ default 3 $thisJob.backOffLimit }}
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: 0{{ $thisJob.weight }}-{{ include "saleor-core.fullname" . }}-db-create-users
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "saleor-core.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        # Settings for the django based application
+        - name: custom-settings
+          configMap:
+          {{- if (not .Values.alternativeAppSettingsConfigMap) }}
+            name: {{ include "saleor-core.fullname" . }}-custom-settings
+          {{- else }}
+            name: {{ .Values.alternativeAppSettingsConfigMap }}
+          {{- end }}
+      restartPolicy: OnFailure
+      initContainers:
+        # Wait for successful response from postgresql
+        - name: "{{- include "saleor-core.jobContainerName" . }}-db-create-users-init-1"
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- include "saleor-core.env" . | indent 10 }}
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default (cat "dev-" .Chart.AppVersion) | nospace }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - >
+              {{ include "saleor.postgresql.isReady" . | nindent 14 }}
+      containers:
+        - name: "{{- include "saleor-core.jobContainerName" . }}-db-create-users"
+          volumeMounts:
+            - name: custom-settings
+              mountPath: /app/saleor/custom-settings.py
+              subPath: custom-settings.py
+              readOnly: true
+          {{- include "saleor-core.env" . | indent 10 }}
+            # Dynamically add a password to the environment for each user email address when not using an existing secret
+          {{- if not $topLevelScope.Values.existingSecret }}
+          {{- range $user := $thisJob.users -}}
+          {{ $key := cat (splitList "." ($user.email | lower | snakecase | replace "@" "-" | replace "_" "-") | first) "pass" | replace " " "-" }}
+            - name: {{ $key | upper | replace "-" "_" }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "saleor-core.fullname" $topLevelScope }}
+                  key: {{ $key }}
+          {{- end }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python3
+            - manage.py
+            - shell
+            - -c
+            - >-
+            {{- range $index, $val := $thisJob.users }}
+              {{- $email_part_1 := splitList "@" $val.email | first -}}
+              {{- $email_part_2 := splitList "." (splitList "@" $val.email | last) | first -}}
+              {{- $email_rejoined := cat (cat $email_part_1 $email_part_2) "pass" | replace " " "-" -}}
+              {{- $email_env_var := $email_rejoined | replace "-" "_" | upper }}
+              import os;
+              import time;
+              time.sleep( 3 );
+              from saleor.account.models import User;
+              time.sleep( 3 );
+              is_staff = ("{{ $val.isStaff }}" == "true");
+              is_superuser = ("{{ $val.isSuperuser }}" == "true");
+              user_{{ $index }} = User.objects.create_user(email="{{ $val.email }}",password=os.environ.get("{{ $email_env_var }}","{{ $val.password }}"),is_staff=is_staff,is_superuser=is_superuser,is_active=True);
+              time.sleep( 3 );
+              user_{{ $index }}.save();
+              time.sleep( 3 );
+            {{- end }}
+{{- end -}}

@@ -1,0 +1,163 @@
+# Collect all ingress http hosts into a comma separated string
+{{- $http := dict "hosts" (list) }}
+{{- range $http_hosts_val := .Values.ingress.hosts }}
+{{- $_ := set $http "hosts" (append $http.hosts ($http_hosts_val.host | join "," | trimAll ",")) }}
+{{- end }}
+{{- $http_hosts := $http.hosts | join  "," }}
+
+# Collect all ingress https hosts into a comma separated string
+{{- $tls := dict "hosts" (list) }}
+{{- range $tls_hosts_val := .Values.ingress.tls }}
+{{- $_ := set $tls "hosts" (append $tls.hosts ($tls_hosts_val.hosts | join "," | trimAll ",")) }}
+{{- end }}
+{{- $tls_hosts := $tls.hosts | join  "," }}
+
+# Collect all types of ingress hosts into a deduplicated list
+{{- $ingress_hosts := cat $http_hosts $tls_hosts | replace " " "," | splitList "," | uniq | join "," | trimAll "," }}
+{{- $ingress_hosts_client := $ingress_hosts | replace "core." "" }}
+
+# Collect values hosts and ingress hosts into a deduplicated list
+{{- $allowed_hosts := empty .Values.allowedHosts.hosts | ternary "" (cat (.Values.allowedHosts.hosts | join "," | trimAll ",") $ingress_hosts | replace " " "," | splitList "," | uniq | join ",") }}
+{{- $all_hosts := empty $allowed_hosts | ternary $ingress_hosts (cat $allowed_hosts $ingress_hosts | replace " " "," | splitList "," | uniq | join ",") }}
+{{- $all_hosts_client := empty $allowed_hosts | ternary $ingress_hosts_client ($all_hosts | replace "core." "" | splitList "," | uniq | join ",") }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saleor-core.fullname" . }}
+  labels:
+    {{- include "saleor-core.labels" . | nindent 4 }}
+data:
+
+  ## Django Configuration parameters
+
+  DJANGO_SETTINGS_MODULE: {{ .Values.settingsModule | quote }}
+  DEBUG: {{ .Values.debugMode | toString | title | quote }}
+  INTERNAL_IPS: {{  .Values.internalIps | join "," | quote }}
+  TIME_ZONE: {{ .Values.timezone | quote }}
+  LANGUAGE_CODE: {{ .Values.languageCode | quote }}
+  USE_I18N: {{ .Values.internationalization | toString | title | quote }}
+  USE_L10N: {{ .Values.localization | toString | title | quote }}
+  USE_TZ: {{- if .Values.timezone }}
+    {{- print " \"True\"" }}
+  {{- else }}
+    {{- print " \"False\"" }}
+  {{- end }}
+  ENABLE_SSL: {{ .Values.ssl.enabled | toString | title | quote }}
+  DEFAULT_FROM_EMAIL: {{ .Values.externalServices.email.defaultFromEmail | quote }}
+  STATIC_URL: {{ .Values.staticUrl | quote }}
+  MEDIA_URL: {{ .Values.mediaUrl | quote }}
+  ENABLE_SILK: {{ .Values.enableSilk | toString | title | quote }}
+{{- if and .Values.allowedHosts.includeIngressHosts .Values.ingress.enabled }}
+  ALLOWED_HOSTS: {{ $all_hosts }}
+{{- else if not (empty .Values.allowedHosts.hosts) }}
+  ALLOWED_HOSTS: {{ .Values.allowedHosts.hosts | join "," | trimAll "," }}
+{{- else }}
+  ALLOWED_HOSTS:
+{{- end }}
+  CREATE_IMAGES_ON_DEMAND: {{ .Values.images.createOnDemand | toString | title | quote }}
+  ENABLE_DEBUG_TOOLBAR: {{ .Values.enableDjangoDebugToolbar | toString | title | quote }}
+
+
+  ## Saleor Specific configuration parameters
+
+
+  DEFAULT_COUNTRY: {{ .Values.defaultCountry | quote }}
+  DEFAULT_CURRENCY: {{ .Values.defaultCurrency | quote }}
+  GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.googleAnalyticsTrackingId | default "" | quote  }}
+{{- if and .Values.allowedHosts.includeIngressHosts .Values.ingress.enabled }}
+  ALLOWED_CLIENT_HOSTS: {{ $all_hosts_client }}
+{{- else if not (empty .Values.allowedHosts.hosts) }}
+  ALLOWED_CLIENT_HOSTS: {{ .Values.allowedHosts.hosts | join "," | trimAll "," }}
+{{- else }}
+  ALLOWED_CLIENT_HOSTS:
+{{- end }}
+  ALLOWED_GRAPHQL_ORIGINS: {{ .Values.allowedGraphqlOrigins | quote }}
+  MAX_CHECKOUT_LINE_QUANTITY: {{ .Values.maxCheckoutLineQuantity | toString | quote }}
+  JWT_EXPIRE: {{ .Values.tokens.jwt.accessTokenExpires | toString | title | quote }}
+  JWT_TTL_ACCESS: {{ .Values.tokens.jwt.accessTokenExpiresIn | quote }}
+  JWT_TTL_REFRESH: {{ .Values.tokens.jwt.refreshTokenExpiresIn | quote }}
+  JWT_TTL_REQUEST_EMAIL_CHANGE: {{ .Values.tokens.jwt.emailChangeRequestTokenExpiresIn | quote }}
+  PLAYGROUND_ENABLED: {{ .Values.graphql.playgroundEnabled | toString | title | quote }}
+  ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL: {{ .Values.requireNewCustomerAccountConfirmation | toString | title | quote }}
+
+
+  ## API Server Gunicorn configuration parameters
+
+  GUNICORN_LOG_LEVEL: {{ .Values.api.gunicorn.log_level | quote }}
+  GUNICORN_FORWARDED_ALLOW_IPS: {{ .Values.api.gunicorn.forwarded_allow_ips | quote }}
+  GUNICORN_PROXY_ALLOW_IPS: {{ .Values.api.gunicorn.proxy_allow_ips | quote }}
+  GUNICORN_BIND_TEST_TEST_TEST_TEST: {{ .Values.api.gunicorn.host | quote }}
+  GUNICORN_BIND_HOST: {{ .Values.api.gunicorn.host | quote }}
+  GUNICORN_BIND_PORT: {{ .Values.api.gunicorn.port | quote }}
+  GUNICORN_BACKLOG: {{ .Values.api.gunicorn.backlog | quote }}
+  GUNICORN_WORKER_PROCESSES: {{ .Values.api.gunicorn.worker_processes | quote }}
+  GUNICORN_WORKER_CLASS: {{ .Values.api.gunicorn.worker_class | quote }}
+  GUNICORN_THREADS_PER_WORKER: {{ .Values.api.gunicorn.threads_per_worker | quote }}
+  GUNICORN_MAX_WORKER_CONNECTIONS: {{ .Values.api.gunicorn.max_worker_connections | quote }}
+  GUNICORN_SILENT_WORKER_TIMEOUT: {{ .Values.api.gunicorn.silent_worker_timeout | quote }}
+  GUNICORN_WORKER_RESTART_GRACEFUL_TIMEOUT: {{ .Values.api.gunicorn.worker_restart_graceful_timeout | quote }}
+  GUNICORN_CONNECTION_KEEP_ALIVE: {{ .Values.api.gunicorn.connection_keep_alive | quote }}
+
+
+  ## External Services
+
+  ### Redis
+{{- if .Values.externalServices.redis.tls }}
+  REDIS_PREFIX: "rediss://"
+{{- else }}
+  REDIS_PREFIX: "redis://"
+{{- end }}
+{{- if .Values.externalServices.redis.host }}
+  REDIS_HOST: {{ .Values.externalServices.redis.host | quote }}
+{{- else }}
+  REDIS_HOST: {{ .Release.Name }}-redis-master.{{ .Release.Namespace }}
+{{- end }}
+  REDIS_PORT: {{ .Values.externalServices.redis.port | default 6379 | quote }}
+  REDIS_DB_NUMBER: {{ .Values.externalServices.redis.dbNumber | default 0 | quote }}
+  CELERY_BROKER_DB_NUMBER: {{ .Values.externalServices.redis.celeryBrokerDbNumber | default 1 | quote }}
+
+  ### Postgresql
+{{- if .Values.externalServices.postgresql.host }}
+  POSTGRESQL_HOST: {{ .Values.externalServices.postgresql.host | quote }}
+{{- else }}
+  POSTGRESQL_HOST: {{ .Release.Name }}-postgresql.{{ .Release.Namespace }}
+{{- end }}
+  POSTGRESQL_USER: {{ .Values.externalServices.postgresql.user | default "postgres" | quote }}
+  POSTGRESQL_PORT: {{ .Values.externalServices.postgresql.port | default "5432" | quote }}
+  POSTGRESQL_DATABASE: {{ .Values.externalServices.postgresql.database | default "saleor" | quote }}
+
+
+  ### Google Recaptcha
+  RECAPTCHA_PUBLIC_KEY: {{ .Values.externalServices.googleRecaptcha.publicKey | quote }}
+
+
+  ### S3 Cloud Storage
+{{- if and .Values.externalServices.cloudStorage.enabled .Values.externalServices.cloudStorage.s3.enabled -}}
+  AWS_QUERYSTRING_AUTH: {{ .Values.externalServices.cloudStorage.s3.queryStringAuth | toString | title | quote }}
+  AWS_LOCATION: {{ .Values.externalServices.cloudStorage.s3.location | quote }}
+  AWS_STORAGE_BUCKET_NAME: {{ .Values.externalServices.cloudStorage.s3.staticBucketName | quote }}
+  AWS_S3_CUSTOM_DOMAIN: {{ .Values.externalServices.cloudStorage.s3.staticCustomDomain | quote }}
+  AWS_MEDIA_BUCKET_NAME: {{ .Values.externalServices.cloudStorage.s3.mediaBucketName | quote }}
+  AWS_MEDIA_CUSTOM_DOMAIN: {{ .Values.externalServices.cloudStorage.s3.mediaCustomDomain | quote }}
+{{- if not (empty .Values.externalServices.cloudStorage.s3.defaultAcl) }}
+  AWS_DEFAULT_ACL: {{ .Values.externalServices.cloudStorage.s3.defaultAcl | quote }}
+{{- end }}
+{{- if not (empty .Values.externalServices.cloudStorage.s3.endpointUrl) }}
+  AWS_S3_ENDPOINT_URL: {{ .Values.externalServices.cloudStorage.s3.endpointUrl | quote }}
+{{- end }}
+{{- if not (empty .Values.externalServices.cloudStorage.s3.region) }}
+  AWS_S3_REGION_NAME: {{ .Values.externalServices.cloudStorage.s3.region | quote }}
+{{- end }}
+{{- end }}
+
+
+  ### Braintree
+{{- if .Values.externalServices.braintree.enabled }}
+  BRAINTREE_PUBLIC_KEY: {{ .Values.externalServices.braintree.publicKey | quote }}
+  BRAINTREE_SANDBOX_MODE: {{ .Values.externalServices.braintree.sandboxMode | quote}}
+  BRAINTREE_MERCHANT_ID: {{ .Values.externalServices.braintree.merchantId | quote }}
+  BRAINTREE_CURRENCIES: {{ .Values.externalServices.braintree.currencies | quote }}
+  BRAINTREE_REQUIRE_3D_SECURE: {{ .Values.externalServices.braintree.require3DSecure | quote }}
+{{- end }}
+

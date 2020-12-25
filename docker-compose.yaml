@@ -1,0 +1,40 @@
+# @format
+---
+version: "3"
+
+services:
+  saleor_core:
+    build:
+      context: ./saleor_core
+      dockerfile: Dockerfile
+      args:
+        SHORT_SHA: ${SHORT_SHA}
+        VERSION: ${VERSION}
+        UID: 1001
+        GUID: 1001
+
+  saleor_core_dev:
+    build:
+      context: ./saleor_core_dev
+      dockerfile: Dockerfile
+      args:
+        SHORT_SHA: ${SHORT_SHA}
+        VERSION: ${VERSION}
+        UID: 1001
+        GUID: 1001
+
+  saleor_core_dashboard:
+    build:
+      context: ./saleor_core_dashboard
+      dockerfile: Dockerfile
+      args:
+        SHORT_SHA: ${SHORT_SHA}
+        VERSION: ${VERSION}
+
+  saleor_core_storefront:
+    build:
+      context: ./saleor_core_storefront
+      dockerfile: Dockerfile
+      args:
+        SHORT_SHA: ${SHORT_SHA}
+        VERSION: ${VERSION}

@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "saleor-dashboard.fullname" . }}
+  labels:
+    {{- include "saleor-dashboard.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "saleor-dashboard.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "saleor-dashboard.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # ConfigMap for the nginx configuration
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "saleor-dashboard.fullname" . }}
+        - name: app-tmp
+          emptyDir:
+            medium: Memory
+        - name: app
+          emptyDir:
+            medium: Memory
+      serviceAccountName: {{ include "saleor-dashboard.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: "{{- include "saleor-dashboard.fullname" . }}-init-1"
+          {{- include "saleor-dashboard.env" . | nindent 10 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/substitute_env_vars.sh
+              subPath: substitute_env_vars.sh
+              readOnly: true
+            - name: app-tmp
+              mountPath: /etc/nginx/app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - >-
+              cp /app/substitute_env_vars.sh /etc/nginx/app/substitute_env_vars.sh &&
+              chmod +x /etc/nginx/app/substitute_env_vars.sh &&
+              cp --recursive /app /etc/nginx &&
+              /etc/nginx/app/substitute_env_vars.sh &&
+              rm /etc/nginx/app/substitute_env_vars.sh
+        - name: "{{- include "saleor-dashboard.fullname" . }}-init-2"
+          {{- include "saleor-dashboard.env" . | nindent 10 }}
+          volumeMounts:
+            - name: app-tmp
+              mountPath: /etc/nginx/app
+            - name: app
+              mountPath: /app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - >-
+              cp --recursive /etc/nginx/app/. /app
+      containers:
+        - name: "{{- include "saleor-dashboard.fullname" . }}"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: app
+              mountPath: /app
+              readOnly: true
+          {{- include "saleor-dashboard.env" . | nindent 10 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["nginx"]
+          args:
+            - -g
+            - "daemon off;"
+          ports:
+            - containerPort: {{ .Values.port }}
+              protocol: TCP
+          livenessProbe: {{ toYaml .Values.livenessProbeSettings | nindent 12 }}
+            httpGet:
+              path: /healthz
+              port: {{ int .Values.port | add1 }}
+          readinessProbe: {{ toYaml .Values.readinessProbeSettings | nindent 12 }}
+            httpGet:
+              path: /healthz
+              port:  {{ int .Values.port | add1 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

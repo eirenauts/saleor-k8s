@@ -1,0 +1,102 @@
+{{- $port := .Values.port -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saleor-storefront.fullname" . }}
+  labels:
+    {{- include "saleor-storefront.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    worker_processes  {{ .Values.nginxConfig.workerProcesses }};
+    pid /tmp/nginx.pid;
+    events {
+      worker_connections  {{ .Values.nginxConfig.workerConnections }};
+    }
+    http {
+      proxy_temp_path /tmp/proxy_temp;
+      client_body_temp_path /tmp/client_temp;
+      fastcgi_temp_path /tmp/fastcgi_temp;
+      uwsgi_temp_path /tmp/uwsgi_temp;
+      scgi_temp_path /tmp/scgi_temp;
+
+      sendfile on;
+      charset utf-8;
+      tcp_nopush on;
+      tcp_nodelay on;
+      keepalive_timeout 65;
+      client_body_timeout 20;
+      client_header_timeout 20;
+      send_timeout 20;
+      types_hash_max_size 2048;
+      client_max_body_size 100M;
+      client_body_buffer_size 20K;
+      client_header_buffer_size 2k;
+      large_client_header_buffers 2 2k;
+      include /etc/nginx/mime.types;
+      include /etc/nginx/conf.d/*.conf;
+      default_type application/octet-stream;
+      gzip on;
+      gzip_static on;
+      gzip_comp_level  2;
+      gzip_min_length  1000;
+      gzip_proxied expired no-cache no-store private auth;
+      gzip_types
+        text/css
+        text/javascript
+        text/xml
+        application/javascript
+        font/truetype
+        font/opentype
+        application/vnd.ms-fontobject
+        image/svg+xml;
+
+    {{- if .Values.nginxConfig.accessLogs.muteHealthChecks }}
+      map $http_user_agent $loggable {
+          ~^[kube-probe]  0;
+          default 1;
+      }
+    {{- else }}
+      map $http_user_agent $loggable {
+          default 1;
+      }
+    {{- end }}
+
+    log_format filtered '{{ .Values.nginxConfig.logFormat }}';
+
+    {{- if not .Values.nginxConfig.accessLogs.enabled }}
+      access_log off;
+    {{- else }}
+      # Do not log internal kubernetes health probes
+      access_log /var/log/nginx/access.log filtered if=$loggable;
+    {{- end }}
+    {{- if not .Values.nginxConfig.errorLogs.enabled }}
+      error_log /dev/null;
+    {{- else }}
+      error_log /var/log/nginx/error.log {{ .Values.nginxConfig.errorLogs.level }};
+    {{- end }}
+
+      server {
+          listen       {{ int $port | add1 }};
+          server_name  localhost;
+
+          location /healthz {
+              return 200;
+          }
+      }
+
+    {{- range .Values.ingress.hosts }}
+      server {
+        listen      {{ $port }};
+        server_name {{ .host }};
+        add_header Cache-Control public;
+
+        location / {
+            alias /app/;
+            try_files $uri $uri/ /index.html;
+        }
+      }
+    {{- end }}
+    }
+
+  substitute_env_vars.sh: |
+{{ .Files.Get "config/substitute_env_vars.sh" | indent 4 }}

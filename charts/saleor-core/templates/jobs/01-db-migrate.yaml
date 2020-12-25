@@ -1,0 +1,73 @@
+{{- $thisJob := .Values.jobs.init.migrations }}
+{{- if $thisJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: 0{{ $thisJob.weight }}-{{ include "saleor-core.fullname" . }}-db-migrate
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": {{ (default 1 $thisJob.weight) | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  activeDeadlineSeconds: {{ default 300 $thisJob.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ default 600 $thisJob.ttlSecondsAfterFinished }}
+  backoffLimit: {{ default 3 $thisJob.backOffLimit }}
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: 0{{ $thisJob.weight }}-{{ include "saleor-core.fullname" . }}-db-migrate
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "saleor-core.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        # Settings for the django based application
+        - name: custom-settings
+          configMap:
+          {{- if (not .Values.alternativeAppSettingsConfigMap) }}
+            name: {{ include "saleor-core.fullname" . }}-custom-settings
+          {{- else }}
+            name: {{ .Values.alternativeAppSettingsConfigMap }}
+          {{- end }}
+      restartPolicy: OnFailure
+      initContainers:
+        # Wait for successful response from postgresql
+        - name: "{{- include "saleor-core.jobContainerName" . }}-db-migrate-init-1"
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- include "saleor-core.env" . | indent 10 }}
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default (cat "dev-" .Chart.AppVersion) | nospace }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - >
+              {{ include "saleor.postgresql.isReady" . | nindent 14 }}
+      containers:
+        - name: "{{- include "saleor-core.jobContainerName" . }}-db-migrate"
+          volumeMounts:
+            - name: custom-settings
+              mountPath: /app/saleor/custom-settings.py
+              subPath: custom-settings.py
+              readOnly: true
+          {{- include "saleor-core.env" . | indent 10 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - -c
+            - >-
+              python3 manage.py migrate
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 256Mi
+{{- end -}}

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "saleor-core.fullname" . }}-test-connection"
+  labels:
+    {{- include "saleor-core.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "saleor-core.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never

@@ -1,0 +1,23 @@
+# @format
+
+apiVersion: v2
+name: saleor-dashboard
+description: A Helm chart for deploying the saleor dashboard application in Kubernetes
+type: application
+version: 0.1.0
+appVersion: 2.11.1
+kubeVersion: ">=1.9.0"
+keywords:
+  - saleor
+  - ecommerce
+  - graphql
+  - django
+  - single page app
+home: https://github.com/eirenauts/saleor-k8s
+sources:
+  - https://github.com/mirumee/saleor
+  - https://github.com/eirenauts/saleor-k8s
+maintainers:
+  - name: Stephen Moloney
+    email: stephen@stephenmoloney.com
+    url: stephenmoloney.com

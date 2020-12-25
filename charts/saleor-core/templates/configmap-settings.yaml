@@ -1,0 +1,43 @@
+{{- if not .Values.alternativeSettingsConfigMap }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saleor-core.fullname" . }}-custom-settings
+  labels:
+    {{- include "saleor-core.labels" . | nindent 4 }}
+data:
+  custom-settings.py: |
+    from saleor.settings import *
+
+{{- if eq (len .Values.admins) 0 }}
+    ADMINS = ()
+{{- else }}
+    ADMINS = (
+    {{- range .Values.admins }}
+        ('{{ .name }}', '{{ .email }}'),
+    {{- end }}
+    )
+{{- end }}
+    MANAGERS = ADMINS
+
+    INTERNAL_IPS = get_list(
+        os.environ.get('INTERNAL_IPS', '127.0.0.1'))
+
+    TIME_ZONE = os.environ.get('TIME_ZONE', 'UTC')
+    LANGUAGE_CODE = os.environ.get('LANGUAGE_CODE', 'en')
+    USE_I18N = get_bool_from_env('USE_I18N', True)
+    USE_L10N = get_bool_from_env('USE_L10N', True)
+    USE_TZ = get_bool_from_env('USE_TZ', True)
+    DEFAULT_PLACEHOLDER = PLACEHOLDER_IMAGES[255]
+    SECURE_SSL_REDIRECT = get_bool_from_env('ENABLE_SSL', False)
+
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN")
+
+    PLUGINS = [
+    {{- range .Values.allowablePlugins }}
+      {{ cat (. | quote) "," | nospace  }}
+    {{- end }}
+    ]
+
+{{- end -}}
