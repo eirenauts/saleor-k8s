@@ -4,7 +4,7 @@ apiVersion: v2
 name: saleor-platform
 description: A Helm chart for deploying the entire umbrella of saleor charts
 type: application
-version: 0.1.0
+version: 0.0.1
 appVersion: 2.11.1
 kubeVersion: ">=1.9.0"
 keywords:

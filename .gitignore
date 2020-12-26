@@ -6,3 +6,5 @@ saleor_core_dev
 saleor_dashboard
 saleor_storefront
 charts/saleor-platform/charts
+downloads
+*-x86_64

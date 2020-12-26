@@ -1,0 +1,20 @@
+# @format
+
+owner: eirenauts
+git-repo: saleor-k8s
+# charts-repo
+index-path: index.yaml
+package-path: .packaged
+# sign
+# key
+# keyring
+# passphrase-file
+# token
+git-base-url: https://api.github.com/
+git-upload-url: https://uploads.github.com/
+# commit
+pages-branch: gh-pages
+push: true
+pr: false
+remote: origin
+# release-name-template

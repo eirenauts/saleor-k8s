@@ -1,7 +1,7 @@
 # @format
 ---
 stages:
-  - stage: Build
+  - stage: docker_build
     displayName: Build images
     condition: and(
       ne(variables['Build.SourceBranch'], 'refs/heads/master'),

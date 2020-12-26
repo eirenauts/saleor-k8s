@@ -3,3 +3,4 @@ saleor_core/**
 saleor_core_dev/**
 saleor_dashboard/**
 saleor_storefront/**
+downloads/**
