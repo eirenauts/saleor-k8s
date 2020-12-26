@@ -1,7 +1,7 @@
 # @format
 ---
 stages:
-  - stage: Lint
+  - stage: lint
     displayName: Lint codebase
     condition: and(
       ne(variables['Build.SourceBranch'], 'refs/heads/master'),

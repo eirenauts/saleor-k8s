@@ -8,6 +8,7 @@ SHELL := /bin/bash
 	init_docker \
 	init_docker_compose \
 	init_hadolint \
+	init_chart_releaser \
 	init_all \
 	format_all \
 	lint_all \
@@ -21,7 +22,9 @@ SHELL := /bin/bash
 	push_saleor_dashboard \
 	push_saleor_storefront \
 	get_image \
-	get_image_version
+	get_image_version \
+	push_image \
+	push_updated_charts
 
 
 ## Dependency installation targets
@@ -55,6 +58,9 @@ init_docker_compose:
 init_hadolint:
 	if [ -z "$$(command -v install_hadolint)" ]; then ./scripts/make.sh install_hadolint "${HADOLINT_VERSION}"; fi
 
+init_chart_releaser:
+	if [ -z "$$(command -v cr)" ]; then ./scripts/make.sh install_helm_chart_releaser "${CHART_RELEASER_VERSION}"; fi
+
 init_all: \
 	init_yarn \
 	init_go \
@@ -62,7 +68,8 @@ init_all: \
 	init_shellcheck \
 	init_docker \
 	init_docker_compose \
-	init_hadolint
+	init_hadolint \
+	init_chart_releaser
 
 ## Code consistency/quality targets
 
@@ -204,7 +211,7 @@ push_saleor_core_dev:
 		"ghcr.io/eirenauts/saleor-core:dev-latest"
 	echo "${REGISTRY_TOKEN}" | docker login ghcr.io -u eirenauts --password-stdin
 	make -s push_image \
-		IMAGE_VERSION="$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)" \
+		IMAGE_VERSION="dev-$$(make -s get_image_version SALEOR_REPO=https://github.com/mirumee/saleor.git)" \
 		DOCKER_REPO=saleor-core \
 		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
 	docker logout ghcr.io
@@ -247,3 +254,10 @@ push_saleor_storefront:
 		FORCE_PUSH="${FORCE_PUSH_IMAGES}"
 	docker logout ghcr.io
 	if [[ -e /home/vsts/.docker/config.json ]]; then rm /home/vsts/.docker/config.json; fi
+
+push_updated_charts:
+	@if test -z "$(CR_TOKEN)"; then \
+		echo "env variable CR_TOKEN is required" && \
+		exit 1; \
+	fi;
+	./scripts/make.sh package_newly_versioned_charts "${CR_TOKEN}"
