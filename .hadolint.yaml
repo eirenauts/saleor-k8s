@@ -1,5 +1,0 @@
-# @format
----
-trustedRegistries:
-  - docker.io
-  - ghcr.io
