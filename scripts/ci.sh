@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck shell=bash disable=SC1090
+# shellcheck shell=bash disable=SC1090,SC2015
 
 function install_yarn() {
     sudo apt update -y -qq && sudo apt install -y -qq curl gnupg &&
@@ -130,6 +130,24 @@ function install_hadolint() {
         hadolint --version
 }
 
+function install_helm_chart_releaser() {
+    local release="${1}"
+    local download_url
+    download_url=https://github.com/helm/chart-releaser/releases/download
+
+    if [[ -z "${release}" ]]; then
+        release=1.1.1
+    fi
+
+    mkdir -p ./downloads/cr
+
+    wget --quiet "${download_url}/v${release}/chart-releaser_${release}_linux_amd64.tar.gz" &&
+        tar -C ./downloads/cr -xvzf chart-releaser_${release}_linux_amd64.tar.gz &&
+        sudo chmod +x ./downloads/cr/cr &&
+        sudo mv ./downloads/cr/cr /usr/local/bin/cr &&
+        cr version
+}
+
 function format_yaml() {
     yarn prettier --write ./**/*.y*ml
 }
@@ -239,6 +257,10 @@ function get_redacted_git_branch() {
     sed --regexp-extended 's|\W|-|g' <<<"$(get_git_branch)"
 }
 
+function get_short_sha() {
+    git rev-parse --short --quiet HEAD
+}
+
 function get_image_version() {
     local saleor_repo="${1}"
     local branch
@@ -249,11 +271,11 @@ function get_image_version() {
     fi
 
     branch="$(get_redacted_git_branch)"
-
+    short_sha="$(get_short_sha)"
     required_version="$(get_required_app_version "${saleor_repo}")"
 
     if [[ -z "$(get_git_tag)" ]]; then
-        echo "${branch}-${required_version}"
+        echo "${branch}-${short_sha}"
     else
         echo "${required_version}"
     fi
@@ -348,6 +370,14 @@ function prepare_saleor_source() {
         cat Dockerfile
 }
 
+function docker_push() {
+    local docker_repo="${1}"
+    local image_version="${2}"
+
+    docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
+        docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+}
+
 function push_image() {
     local image_version="${1}"
     local docker_repo="${2}"
@@ -365,12 +395,10 @@ function push_image() {
 
     if [[ -n "${force_push}" ]]; then
         echo "Force pushing images"
-        docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
-            docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+        docker_push "${docker_repo}" "${image_version}"
     else
         docker manifest inspect "ghcr.io/eirenauts/${docker_repo}:${image_version}" >/dev/null 2>&1 &&
             echo "Image already exists, skipping push" ||
-            docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
-            docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+            docker_push "${docker_repo}" "${image_version}"
     fi
 }

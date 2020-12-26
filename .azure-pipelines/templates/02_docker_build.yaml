@@ -1,13 +1,13 @@
 # @format
 ---
 stages:
-  - stage: Build
+  - stage: docker_build
     displayName: Build images
     condition: and(
       ne(variables['Build.SourceBranch'], 'refs/heads/master'),
       not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       )
-    dependsOn: []
+    dependsOn: [lint]
     jobs:
       - job: build_saleor_core
         displayName: Build saleor-core image
