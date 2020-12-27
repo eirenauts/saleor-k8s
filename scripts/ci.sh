@@ -233,10 +233,6 @@ function get_short_sha() {
     git rev-parse --short --quiet HEAD || echo "unknown"
 }
 
-function get_git_tag() {
-    git tag --points-at HEAD 2>/dev/null || echo ""
-}
-
 function get_branch_from_azure_devops_ci() {
     if [[ -n "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" ]]; then
         sed --regexp-extended 's|refs/heads/||g' <<<"${SYSTEM_PULLREQUEST_SOURCEBRANCH}"
@@ -274,7 +270,7 @@ function get_image_version() {
     short_sha="$(get_short_sha)"
     required_version="$(get_required_app_version "${saleor_repo}")"
 
-    if [[ -z "$(get_git_tag)" ]]; then
+    if [[ "${branch}" != "master" ]]; then
         echo "${branch}-${short_sha}"
     else
         echo "${required_version}"
@@ -375,7 +371,11 @@ function docker_push() {
     local image_version="${2}"
 
     docker push "ghcr.io/eirenauts/${docker_repo}:${image_version}" &&
-        docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+        if [[ "${image_version}" == *"dev-"* ]]; then
+            docker push "ghcr.io/eirenauts/${docker_repo}:dev-latest"
+        else
+            docker push "ghcr.io/eirenauts/${docker_repo}:latest"
+        fi
 }
 
 function push_image() {

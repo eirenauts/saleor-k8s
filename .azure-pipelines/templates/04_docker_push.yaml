@@ -3,7 +3,7 @@
 stages:
   - stage: docker_push
     displayName: Push images
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+    condition: and(eq(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
     dependsOn: []
     jobs:
       - job: push_saleor_core

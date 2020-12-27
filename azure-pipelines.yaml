@@ -32,5 +32,5 @@ variables:
 stages:
   - template: .azure-pipelines/templates/01_lint.yaml
   - template: .azure-pipelines/templates/02_docker_build.yaml
-  - template: .azure-pipelines/templates/03_docker_push.yaml
-  - template: .azure-pipelines/templates/04_helm_push.yaml
+  - template: .azure-pipelines/templates/03_helm_push.yaml
+  - template: .azure-pipelines/templates/04_docker_push.yaml

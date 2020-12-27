@@ -6,22 +6,23 @@ stages:
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
     dependsOn: []
     jobs:
-      - deployment: helm_push_approval
-        displayName: Approval for push to registry
-        dependsOn: []
-        continueOnError: false
-        timeoutInMinutes: 1296000
-        cancelTimeoutInMinutes: 1296000
-        environment: "Push saleor helm charts"
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - script: echo "approval required"
+#      - deployment: helm_push_approval
+#        displayName: Approval for push to registry
+#        dependsOn: []
+#        continueOnError: false
+#        timeoutInMinutes: 1296000
+#        cancelTimeoutInMinutes: 1296000
+#        environment: "Push saleor helm charts"
+#        strategy:
+#          runOnce:
+#            deploy:
+#              steps:
+#                - script: echo "approval required"
 
       - job: push_saleor_helm_charts
         displayName: Push saleor helm charts to github pages
-        dependsOn: [helm_push_approval]
+#        dependsOn: [helm_push_approval]
+        dependsOn: []
         condition: succeeded()
         steps:
           - template: ../init_step.yaml
