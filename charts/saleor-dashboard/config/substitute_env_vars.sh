@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2002
 
 replace_vars() {
     local to_replace=$1
@@ -37,12 +38,12 @@ main() {
     rm "/etc/nginx/app/${dashboard_js_base_filepath}.2"
     rm "/etc/nginx/app/${dashboard_js_base_filepath}.3"
 
-    grep -oP '.{100,100}src=.{100,150}' </etc/nginx/app/index.html
-    grep -oP '.{100,100}a.oe=function(e).{100,150}' <"/etc/nginx/app/${dashboard_js_base_filepath}"
-    grep -oP '.{100,100}apiUri.{100,150}' <"/etc/nginx/app/${dashboard_js_base_filepath}"
-    grep -oP '.{100,100}onApiUriClick:function().{100,150}' <"/etc/nginx/app/${dashboard_js_base_filepath}"
-    grep -oP '.{100,100}credentials:"include".{100,150}' <"/etc/nginx/app/${dashboard_js_base_filepath}"
-    grep -oP '.{100,100}(Lu={}).{100,150}' <"/etc/nginx/app/${dashboard_js_base_filepath}"
+    cat /etc/nginx/app/index.html | grep -oP '.{100,100}src=.{100,150}'
+    cat "/etc/nginx/app/${dashboard_js_base_filepath}" | grep -oP '.{100,100}a.oe=function(e).{100,150}'
+    cat "/etc/nginx/app/${dashboard_js_base_filepath}" | grep -oP '.{100,100}apiUri.{100,150}'
+    cat "/etc/nginx/app/${dashboard_js_base_filepath}" | grep -oP '.{100,100}onApiUriClick:function().{100,150}'
+    cat "/etc/nginx/app/${dashboard_js_base_filepath}" | grep -oP '.{100,100}credentials:"include".{100,150}'
+    cat "/etc/nginx/app/${dashboard_js_base_filepath}" | grep -oP '.{100,100}(Lu={}).{100,150}'
 }
 
 main

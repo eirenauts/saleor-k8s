@@ -1,0 +1,30 @@
+# @format
+---
+- hosts: localhost
+  connection: local
+  become: false
+  gather_facts: "no"
+  tasks:
+    - name: set the kubeconfig environment variables
+      import_tasks: kubeconfig-env.yaml
+
+    - name: create the certificate for each domain
+      environment:
+        K8S_AUTH_KUBECONFIG: "{{ k8s_auth_kubeconfig }}"
+        K8S_AUTH_CONTEXT: "{{ k8s_auth_context }}"
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: cert-manager.io/v1
+          kind: Certificate
+          metadata:
+            name: "{{ item.name }}"
+            namespace: "{{ item.namespace }}"
+          spec:
+            commonName: "{{ item.commonName }}"
+            secretName: "{{ item.secretName }}"
+            dnsNames: "{{ item.dnsNames }}"
+            issuerRef:
+              name: "{{ item.issuerRef }}"
+              kind: "{{ item.issuerKind }}"
+      loop: "{{ certs }}"

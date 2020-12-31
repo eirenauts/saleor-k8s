@@ -1,0 +1,482 @@
+# @format
+
+# yamllint disable rule:line-length
+---
+- hosts: localhost
+  connection: local
+  become: false
+  gather_facts: "no"
+  tasks:
+    - block:
+        - name: set the kubeconfig environment variables
+          import_tasks: kubeconfig-env.yaml
+
+        - name: add saleor-k8s helm repo
+          community.kubernetes.helm_repository:
+            repo_state: present
+            repo_name: saleor-k8s
+            repo_url: https://eirenauts.github.io/saleor-k8s
+
+        - name: ensure the saleor namespace is created
+          environment:
+            K8S_AUTH_KUBECONFIG: "{{ k8s_auth_kubeconfig }}"
+            K8S_AUTH_CONTEXT: "{{ k8s_auth_context }}"
+          community.kubernetes.k8s:
+            name: saleor
+            state: present
+            resource_definition:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: saleor-platform
+                # annotations:
+                # linkerd.io/inject: enabled
+
+        - name: create the saleor-custom secret
+          environment:
+            K8S_AUTH_KUBECONFIG: "{{ k8s_auth_kubeconfig }}"
+            K8S_AUTH_CONTEXT: "{{ k8s_auth_context }}"
+          community.kubernetes.k8s:
+            state: present
+            resource_definition:
+              apiVersion: v1
+              kind: Secret
+              type: Generic
+              metadata:
+                name: saleor-custom
+                namespace: saleor-platform
+              data:
+                EMAIL_PASSWORD: "{{ mailgun_email_password_enc | b64encode }}"
+                OPENEXCHANGERATES_API_KEY: "{{ open_exchanges_api_key_enc | b64encode }}"
+                RECAPTCHA_PRIVATE_KEY: "{{ google_recaptcha_private_key_enc | b64encode }}"
+                VATLAYER_API_KEY: "{{ vatlayer_access_key_enc | b64encode }}"
+                BRAINTREE_PRIVATE_KEY: "{{ braintree_private_key_enc | b64encode }}"
+                SALEOR_SECRET_KEY: "{{ cookie_secret_key_enc | b64encode }}"
+                POSTGRESQL_PASSWORD: "{{ postgresql_password_enc | b64encode }}"
+                REDIS_PASSWORD: "{{ redis_password_enc | b64encode }}"
+                postgresql-password: "{{ postgresql_password_enc | b64encode }}"
+                redis-password: "{{ redis_password_enc | b64encode }}"
+
+        - name: install saleor chart
+          environment:
+            K8S_AUTH_KUBECONFIG: "{{ k8s_auth_kubeconfig }}"
+            K8S_AUTH_CONTEXT: "{{ k8s_auth_context }}"
+          community.kubernetes.helm:
+            atomic: false
+            chart_ref: https://eirenauts.github.io/saleor-k8s
+            wait: true
+            wait_timeout: 20m0s
+            release_name: saleor-platform
+            release_namespace: saleor-platform
+            release_state: present
+            release_values:
+              ## Postgresql configuration [Primary Database]
+              postgresql:
+                enabled: true
+                existingSecret: saleor-custom
+                image:
+                  registry: docker.io
+                  repository: bitnami/postgresql
+                  tag: 11.9.0-debian-10-r73
+                  pullPolicy: IfNotPresent
+                  debug: true
+                volumePermissions:
+                  enabled: true
+                postgresqlUsername: postgres
+                postgresqlDatabase: changme
+                persistence:
+                  enabled: true
+                  mountPath: /bitnami/postgresql
+                  storageClass: "-"
+                  accessModes:
+                    - ReadWriteOnce
+                  size: 1Gi
+                resources:
+                  requests:
+                    cpu: 125m
+                    memory: 256Mi
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+                networkPolicy:
+                  enabled: false
+                  allowExternal: true
+                metrics:
+                  enabled: false
+                audit:
+                  logHostname: true
+                  logConnections: true
+                  logDisconnections: true
+                  pgAuditLogCatalog: "on"
+                  # DEBUG5, DEBUG4, DEBUG3, DEBUG2, DEBUG1, LOG, NOTICE, WARNING, and ERROR
+                  clientMinMessages: LOG
+                  logTimezone: "UTC"
+                psp:
+                  create: false
+                rbac:
+                  create: false
+                replication:
+                  enabled: false
+                  user: repl_user
+                  password: repl_password
+                  readReplicas: 2
+                  synchronousCommit: "on"
+                  numSynchronousReplicas: 0
+                  applicationName: saleor_core
+                readReplicas:
+                  persistence:
+                    enabled: false
+                  resources:
+                    requests:
+                      memory: 256Mi
+                      cpu: 250m
+                    limits:
+                      memory: 512Mi
+                      cpu: 500m
+
+              ## Redis configuration [ Cache ]
+              redis:
+                enabled: true
+                existingSecret: saleor-custom
+                image:
+                  registry: docker.io
+                  repository: bitnami/redis
+                  tag: 6.0.9-debian-10-r13
+                  pullPolicy: IfNotPresent
+                usePassword: true
+                cluster:
+                  enabled: false
+                  slaveCount: 2
+                persistence:
+                  enabled: false
+                master:
+                  persistence:
+                    enabled: false
+                    path: /data
+                    subPath: ""
+                    accessModes:
+                      - ReadWriteOnce
+                    size: 1Gi
+                networkPolicy:
+                  enabled: true
+                  allowExternal: true
+                  ingressNSMatchLabels: {}
+                  ingressNSPodMatchLabels: {}
+
+              ## NFS server provisioner configuration [ ReadWriteMany Volumes ]
+              ## This component is not required if you have access to a readwritemany volume
+              nfs-server-provisioner:
+                replicaCount: 1
+                image:
+                  repository: quay.io/kubernetes_incubator/nfs-provisioner
+                  tag: v2.3.0
+                  pullPolicy: IfNotPresent
+                service:
+                  type: ClusterIP
+                  nfsPort: 2049
+                  nlockmgrPort: 32803
+                  mountdPort: 20048
+                  rquotadPort: 875
+                  rpcbindPort: 111
+                  statdPort: 662
+                  # nfsNodePort:
+                  # nlockmgrNodePort:
+                  # mountdNodePort:
+                  # rquotadNodePort:
+                  # rpcbindNodePort:
+                  # statdNodePort:
+                  externalIPs: []
+                persistence:
+                  enabled: true
+                  storageClass: "-"
+                  accessMode: ReadWriteOnce
+                  size: 2Gi
+                storageClass:
+                  create: true
+                  provisionerName: nfs-server-provisioner
+                  defaultClass: false
+                  name: saleor-nfs
+                  allowVolumeExpansion: true
+                  parameters: {}
+                  mountOptions:
+                    - vers=3
+                  reclaimPolicy: Delete
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 256Mi
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+
+              ## Saleor core configuration [ Saleor Backend ]
+              saleor-core:
+                enabled: true
+
+                worker:
+                  replicaCount: 1
+                  autoscaling:
+                    enabled: false
+                  livenessProbeSettings:
+                    enabled: false
+                  readinessProbeSettings:
+                    enabled: false
+                  resources:
+                    requests:
+                      cpu: 500m
+                      memory: 512Mi
+                    limits:
+                      cpu: 1000m
+                      memory: 1Gi
+
+                api:
+                  replicaCount: 1
+                  autoscaling:
+                    enabled: false
+
+                web:
+                  replicaCount: 1
+                  autoscaling:
+                    enabled: false
+
+                existingSecret: saleor-custom
+
+                image:
+                  repository: ghcr.io/eirenauts/saleor-core
+                  pullPolicy: IfNotPresent
+                  tag: ""
+                initImage:
+                  repository: ghcr.io/eirenauts/saleor-core
+                  pullPolicy: IfNotPresent
+                  tag: ""
+
+                ingress:
+                  enabled: true
+                  annotations:
+                    cert-manager.io/cluster-issuer: default-issuer
+                    ingress.kubernetes.io/force-ssl-redirect: "true"
+                    kubernetes.io/ingress.class: nginx
+                    kubernetes.io/tls-acme: "true"
+                    # If using linkerd2
+                    # nginx.ingress.kubernetes.io/configuration-snippet: |
+                    #   proxy_set_header l5d-dst-override $service_name.$namespace.svc.cluster.local:$service_port;
+                  hosts:
+                    - host: "{{ core_hostname }}"
+                      paths:
+                        - /
+                  tls:
+                    - secretName: saleor-core-tls-key
+                      hosts:
+                        - "{{ core_hostname }}"
+
+                persistence:
+                  enabled: true
+                  accessMode: ReadWriteOnce
+                  size: 1Gi
+                  storageClass: "saleor-nfs"
+                  # existingPvc:
+
+                ## Configuration Settings
+
+                graphql:
+                  playgroundEnabled: false
+                enableDjangoDebugToolbar: false
+                defaultCountry: US
+                defaultCurrency: USD
+                maxCartLineQuantity: 100
+                allowedHosts:
+                  includeIngressHosts: true
+                  hosts: []
+                tokens:
+                  jwt:
+                    accessTokenExpires: true
+                    accessTokenExpiresIn: "120 minutes"
+                    refreshTokenExpiresIn: "30 days"
+                    emailChangeRequestTokenExpiresIn: "1 hour"
+                allowablePlugins:
+                  - "saleor.plugins.vatlayer.plugin.VatlayerPlugin"
+                  - "saleor.plugins.invoicing.plugin.InvoicingPlugin"
+                  - "saleor.payment.gateways.braintree.plugin.BraintreeGatewayPlugin"
+                  - "saleor.payment.gateways.dummy.plugin.DummyGatewayPlugin"
+
+                ## Helm hook job settings
+
+                jobs:
+                  init:
+                    migrations:
+                      enabled: true
+                      ttlSecondsAfterFinished: 1800
+                      weight: 1
+                    createUsers:
+                      enabled: true
+                      ttlSecondsAfterFinished: 1800
+                      activeDeadlineSeconds: 600
+                      weight: 2
+                      users:
+                        # The secret key depends on what the <email_address> is
+                        # as an example secret key for joe@example.com is JOE_EXAMPLE_PASS
+                        - email: "<email_address>"
+                          password:
+                          isStaff: true
+                          isSuperuser: true
+                    currencyUpdates:
+                      enabled: true
+                      openExchangesApiKey: ""
+                      ttlSecondsAfterFinished: 1800
+                      activeDeadlineSeconds: 600
+                      weight: 3
+                    plugins:
+                      enabled: true
+                      ttlSecondsAfterFinished: 1800
+                      activeDeadlineSeconds: 600
+                      backOffLimit: 10
+                      weight: 4
+
+                ## External Services settings
+
+                externalServices:
+                  # Redis is a caching mechanism
+                  redis:
+                    # Leave empty in `values.yaml` for security reasons, set in a secret
+                    password: ""
+                    host: ""
+                    # tls true => use redis in url instead of redis
+                    tls: false
+                    port: 6379
+                    dbNumber: 0
+                    celeryBrokerDbNumber: 1
+
+                  # Postgresql is the primary database
+                  postgresql:
+                    # Leave empty in `values.yaml` for security reasons, set in a secret
+                    password: ""
+                    user: ""
+                    host: ""
+                    port: 5432
+                    database: saleor
+                    requireSSL: false
+
+                  # Sentry for application exception monitoring
+                  sentry:
+                    enabled: false
+                    # Leave empty in `values.yaml` for security reasons, set in a secret
+                    dsn:
+
+                  # Email Configuration [ For sending emails ]
+                  email:
+                    defaultFromEmail: do-not-reply@<your_email_domain>
+                    # if orderFromEmail is unset, will default to defaultFromEmail
+                    orderFromEmail: do-not-reply@<your_email_domain>
+                    smtpSettings:
+                      generic:
+                        enabled: false
+                        loginName: <REDACTED>
+                        customDomainName: <REDACTED>
+                        providerDomainName: smtp.mailgun.org
+                        port: 465
+                        extraArgs: "?ssl=True"
+
+                  # Google recaptcha key
+                  googleRecaptcha:
+                    publicKey: "<REDACTED>"
+
+                  # Use nginx server for /static and /media assets instead of cloudstorage
+                  cloudStorage:
+                    enabled: false
+
+                  # Enable Vatlayer API to fetch taxes for different classes of items
+                  vatLayer:
+                    enabled: true
+
+                  braintree:
+                    enabled: true
+                    sandboxMode: true
+                    require3DSecure: false
+                    merchantId: "<REDACTED>"
+                    publicKey: "<REDACTED>"
+                    currencies: "<REDACTED>"
+                    # The privateKey is set as a secret in an 'existingSecret'
+                    privateKey:
+
+              ## Saleor storefront configuration [ Saleor Shop UI ]
+              saleor-storefront:
+                enabled: true
+
+                replicaCount: 1
+                autoscaling:
+                  enabled: false
+
+                image:
+                  repository: ghcr.io/eirenauts/saleor-storefront
+                  pullPolicy: IfNotPresent
+                  tag: 2.11.1
+
+                ingress:
+                  enabled: true
+                  annotations:
+                    cert-manager.io/cluster-issuer: default-issuer
+                    ingress.kubernetes.io/force-ssl-redirect: "true"
+                    kubernetes.io/ingress.class: nginx
+                    # nginx.ingress.kubernetes.io/configuration-snippet: |
+                    #   proxy_set_header l5d-dst-override $service_name.$namespace.svc.cluster.local:$service_port;
+                  hosts:
+                    - host: "{{ storefront_hostname }}"
+                      paths:
+                        - /
+                  tls:
+                    - secretName: storefront-saleor-demo-tls-crt
+                      hosts:
+                        - "{{ storefront_hostname }}"
+
+                apiUrl: ""
+                staticUrl: ""
+                demoMode: "false"
+
+                nginxConfig:
+                  accessLogs:
+                    enabled: true
+                    muteHealthChecks: true
+                  errorLogs:
+                    enabled: true
+                    level: warn
+
+                externalServices:
+                  sentry:
+                    enabled: false
+
+                  googleTagManager:
+                    enabled: false
+
+              ## Saleor dashboard configuration [ Saleor Shop Dashboard UI ]
+              saleor-dashboard:
+                enabled: true
+
+                replicaCount: 1
+                autoscaling:
+                  enabled: false
+
+                image:
+                  repository: ghcr.io/eirenauts/saleor-dashboard
+                  pullPolicy: IfNotPresent
+                  tag: 2.11.1
+
+                ingress:
+                  enabled: true
+                  annotations:
+                    cert-manager.io/cluster-issuer: default-issuer
+                    ingress.kubernetes.io/force-ssl-redirect: "true"
+                    kubernetes.io/ingress.class: nginx
+                    # nginx.ingress.kubernetes.io/configuration-snippet: |
+                    #   proxy_set_header l5d-dst-override $service_name.$namespace.svc.cluster.local:$service_port;
+                  hosts:
+                    - host: "{{ dashboard_hostname }}"
+                      paths:
+                        - /
+                  tls:
+                    - secretName: saleor-dashboard-tls-key
+                      hosts:
+                        - "{{ dashboard_hostname }}"
+
+                staticUrl: ""
+                apiUrl: ""
+                apiMountUri: ""

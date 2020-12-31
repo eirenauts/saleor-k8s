@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2002
 
 replace_vars() {
     local to_replace=$1
@@ -55,13 +56,13 @@ main() {
     rm "/etc/nginx/app/${app_js_base_filepath}.5"
     rm "/etc/nginx/app/${app_js_base_filepath}.6"
 
-    grep -oP '.{100,100}src=.{100,150}' </etc/nginx/app/index.html
-    grep -oP '.{100,100}n(n.s=360).{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
-    grep -oP '.{100,100}e.apiUrl.{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
-    grep -oP '.{100,100}e.sentryDsn.{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
-    grep -oP '.{100,100}o=parseFloat.{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
-    grep -oP '.{100,100}e.demoMode.{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
-    grep -oP '.{100,100}gtmId:.{100,150}' <"/etc/nginx/app/${app_js_base_filepath}"
+    cat /etc/nginx/app/index.html | grep -oP '.{100,100}src=.{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}n(n.s=360).{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}e.apiUrl.{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}e.sentryDsn.{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}o=parseFloat.{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}e.demoMode.{100,150}'
+    cat "/etc/nginx/app/${app_js_base_filepath}" | grep -oP '.{100,100}gtmId:.{100,150}'
 }
 
 main

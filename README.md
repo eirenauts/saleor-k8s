@@ -10,7 +10,7 @@ The umbrella chart required to deploy the entire saleor ecommerce platform is th
 
 | Chart Name        | Notes                                                                                                                                                 |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| saleor-core       | Handles deployment of `saleor-core` application. Includes a number of jobs for initialization tasks, backups and restore.                             |
+| saleor-core       | Handles deployment of `saleor-core` application. Includes a number of jobs for initialization tasks.                             |
 | saleor-dashboard  | Handles deployment of `saleor-dashboard` application as an nginx application. Required for the front end admin dashboard.                             |
 | saleor-storefront | Handles deployment of `saleor-dashboard` application as an nginx application. Required for the front end UI where customers land.                     |
 | saleor-platform   | This is an umbrella chart. It does not deploy any single application but rather is deploys a collection of subcharts required for saleor to function. |
@@ -19,9 +19,9 @@ The umbrella chart required to deploy the entire saleor ecommerce platform is th
 
 There is freedom to deploy the `saleor-platform` chart in a number of different ways - not all of which have been tested out.
 
-An example deployment is illustrated here.
+An example deployment of saleor is illustrated in the [example README.md](./example/README.md).
 
-TODO
+Some changes need to be made to suit your specific requirements.
 
 ### List of Images
 

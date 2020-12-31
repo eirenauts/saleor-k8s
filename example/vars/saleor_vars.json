@@ -1,0 +1,17 @@
+{
+  "chart_version": "0.1.0",
+  "mailgun_email_password_enc": "<REDACTED>",
+  "open_exchanges_api_key_enc": "<REDACTED>",
+  "google_recaptcha_private_key_enc": "<REDACTED>",
+  "vatlayer_access_key_enc": "<REDACTED>",
+  "braintree_private_key_enc": "<REDACTED>",
+  "cookie_secret_key_enc": "<REDACTED>",
+  "postgresql_password_enc": "<REDACTED>",
+  "redis_password_enc": "<REDACTED>",
+  "basic_password_enc": "<REDACTED>",
+  "core_hostname": "<REDACTED>",
+  "storefront_hostname": "<REDACTED>",
+  "dashboard_hostname": "<REDACTED>",
+  "kubeconfig_filepath": "<REDACTED>",
+  "ansible_playbook_python": "~/.venv/k8s-venv/bin/ansible"
+}

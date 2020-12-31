@@ -24,15 +24,17 @@ worker:
   taskEventsMonitoring:
     enabled: true
   livenessProbeSettings:
-    initialDelaySeconds: 30
+    enabled: false
+    initialDelaySeconds: 60
     periodSeconds: 30
-    failureThreshold: 5
+    failureThreshold: 10
     successThreshold: 1
     timeoutSeconds: 2
   readinessProbeSettings:
-    initialDelaySeconds: 30
+    enabled: false
+    initialDelaySeconds: 60
     periodSeconds: 30
-    failureThreshold: 5
+    failureThreshold: 10
     successThreshold: 1
     timeoutSeconds: 2
   resources:
@@ -434,78 +436,15 @@ jobs:
       backOffLimit: 3
       ttlSecondsAfterFinished: 600
       weight: 3
-    prePopulateDemo:
-      enabled: false
-      activeDeadlineSeconds: 480
-      backOffLimit: 3
-      ttlSecondsAfterFinished: 600
-      weight: 4
     plugins:
       enabled: true
       activeDeadlineSeconds: 240
       backOffLimit: 3
       ttlSecondsAfterFinished: 600
-      weight: 5
-    custom:
-      enabled: false
-      activeDeadlineSeconds: 600
-      backOffLimit: 1
-      ttlSecondsAfterFinished: 600
-      weight: 6
+      weight: 4
     empty:
       enabled: true
       activeDeadlineSeconds: 300
       backOffLimit: 1
       ttlSecondsAfterFinished: 120
-      weight: 7
-
-  cron:
-    currencyUpdates:
-      enabled: true
-      cron: "0 6 * * *"
-
-## Backup settings
-
-backup:
-  ## If database backups are enabled, it will perform a simple pg_dump on the postgresql database
-  database:
-    enabled: false
-
-  ## If media backups are enabled, it will perform a tar operation of the /app/media directory
-  ## Not to be enabled if using cloudstorage enabled backends
-  media:
-    enabled: false
-
-  ## Upload to s3 configuration using restic. For now only, s3 compliant storage api is supported.
-  restic:
-    hostname: "saleor-restic"
-    repository_name: "saleor-restic-repo"
-    # Set the password using a secret called RESTIC_PASSWORD
-    password:
-    verbose: true
-    s3:
-      # Set the s3 key id as RESTIC_S3_ACCESS_KEY_ID in a secret
-      keyId:
-      # Set the s3 secret key as RESTIC_S3_SECRET_ACCESS_KEY in a secret
-      keySecret:
-      endpointUrl:
-      region: "eu-west-1"
-      bucket_name:
-
-  cron:
-    enabled: true
-    schedule: "0 6 * * *"
-
-  podSecurityContext:
-    runAsNonRoot: false
-    runAsUser: 0
-    runAsGroup: 0
-    fsGroup: 0
-  containerSecurityContext:
-    runAsNonRoot: false
-    allowPrivilegeEscalation:
-      false
-      #  capabilities:
-      #    drop:
-      #      - ALL
-    #    readOnlyRootFilesystem: true
+      weight: 5

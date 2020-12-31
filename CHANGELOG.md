@@ -2,6 +2,23 @@
 
 **_Please follow the [keep a changelog conventions](https://keepachangelog.com/en/1.0.0/)_**
 
+## saleor-platform-0.1.0
+
+**_Added_**
+
+- example deployment using ansible kubernetes community helm module
+
+**_Removed_**
+
+- Removed `backups` logic as it is not ready for release
+- References to RESTIC variables removed as the feature is not ready for release
+
+**_Fixed_**
+
+- Collectstatic script and function was broken.
+- `init_helm` missing from init phase but the dependency is required
+- issue in bash script fixed on substituting the env variables on startup
+
 ## saleor-platform-0.0.1
 
 Release following charts to `https://eirenauts.github.io/saleor-k8s`

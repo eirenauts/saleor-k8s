@@ -1,0 +1,28 @@
+{
+	"certs": [
+		{
+			"name": "wildcard-saleor-tls-crt",
+			"namespace": "default",
+			"commonName": "*.<REDACTED>",
+			"secretName": "wildcard-saleor-tls-crt",
+			"dnsNames": [
+				"*.<REDACTED>"
+			],
+			"issuerRef": "default-issuer",
+			"issuerKind": "ClusterIssuer"
+		},
+		{
+			"name": "storefront-saleor-tls-crt",
+			"namespace": "default",
+			"commonName": "<REDACTED>",
+			"secretName": "storefront-saleor-tls-crt",
+			"dnsNames": [
+				"<REDACTED>"
+			],
+			"issuerRef": "default-issuer",
+			"issuerKind": "ClusterIssuer"
+		}
+	],
+	"kubeconfig_filepath": "<REDACTED>",
+	"ansible_playbook_python": "~/.venv/k8s-venv/bin/ansible"
+}

@@ -8,6 +8,7 @@ SHELL := /bin/bash
 	init_docker \
 	init_docker_compose \
 	init_hadolint \
+	init_helm \
 	init_chart_releaser \
 	init_all \
 	format_all \
@@ -51,9 +52,10 @@ init_docker:
 
 init_docker_compose:
 	if [ -z "$$(command -v docker)" ]; then ./scripts/make.sh install_docker_compose "${DOCKER_COMPOSE_VERSION}"; fi
-	if [[ ! "$$(docker-compose version | awk NR==1)" =~ "${DOCKER_COMPOSE_VERSION}" ]]; then \
-		./scripts/make.sh install_docker_compose "${DOCKER_COMPOSE_VERSION}"; \
-	fi
+	if [[ -z "$$(command -v docker-compose)" ]]; then ./scripts/make.sh install_docker_compose "${DOCKER_COMPOSE_VERSION}"; fi
+
+init_helm:
+	if [ -z "$$(command -v helm)" ]; then ./scripts/make.sh install_helm_client "${HELM_VERSION}"; fi
 
 init_hadolint:
 	if [ -z "$$(command -v install_hadolint)" ]; then ./scripts/make.sh install_hadolint "${HADOLINT_VERSION}"; fi
@@ -68,6 +70,7 @@ init_all: \
 	init_shellcheck \
 	init_docker \
 	init_docker_compose \
+	init_helm \
 	init_hadolint \
 	init_chart_releaser
 

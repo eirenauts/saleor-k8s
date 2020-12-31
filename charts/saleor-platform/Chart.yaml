@@ -4,7 +4,7 @@ apiVersion: v2
 name: saleor-platform
 description: A Helm chart for deploying the entire umbrella of saleor charts
 type: application
-version: 0.0.1
+version: 0.1.0
 appVersion: 2.11.1
 kubeVersion: ">=1.9.0"
 keywords:
@@ -54,7 +54,7 @@ dependencies:
   ## 2. Pods for the web server (for static assets and media assets) if not using cloud storage
   ## 3. Pods for the celery workers which execute particular tasks on demand
   - name: saleor-core
-    version: "0.0.1"
+    version: "0.1.0"
     repository: "https://eirenauts.github.io/saleor-k8s"
     condition: saleor-core.enabled
     tags:
@@ -64,7 +64,7 @@ dependencies:
 
   ## Notes: This is a web server of pre-built static assets and emails for the storefront which customers see
   - name: saleor-storefront
-    version: "0.0.1"
+    version: "0.1.0"
     repository: "https://eirenauts.github.io/saleor-k8s"
     condition: saleor-storefront.enabled
     tags:
@@ -73,7 +73,7 @@ dependencies:
 
   ## Notes: This is a web server of pre-built static assets for the administrative dashboard
   - name: saleor-dashboard
-    version: "0.0.1"
+    version: "0.1.0"
     repository: "https://eirenauts.github.io/saleor-k8s"
     condition: saleor-dashboard.enabled
     tags:
