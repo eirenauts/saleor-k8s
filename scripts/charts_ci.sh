@@ -136,6 +136,8 @@ function add_required_subcharts() {
     helm repo add saleor-k8s https://eirenauts.github.io/saleor-k8s
     helm repo add kvaps https://kvaps.github.io/charts
     helm repo add bitnami https://charts.bitnami.com/bitnami
+    sleep 15s
+    helm repo update
 }
 
 function package_newly_versioned_charts() {
