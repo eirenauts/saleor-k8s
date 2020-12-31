@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2120,SC2119
-
-COLLECTSTATIC=${1}
 
 function collectstatic() {
     python3 manage.py collectstatic --noinput
 }
 
 function main() {
-    local collectstatic="${1:-COLLECTSTATIC}"
+    local collectstatic="${1}"
 
     if [[ "${collectstatic}" == "true" ]]; then
         collectstatic
     fi
 }
 
-main
+main "${@}"

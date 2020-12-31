@@ -138,28 +138,36 @@ spec:
           {{- if (eq .Values.worker.taskEventsMonitoring.enabled true) }}
             - --task-events
           {{- end }}
+          # Disabled by default due to issues with failures that need to be worked out
+          {{- if .Values.worker.livenessProbeSettings.enabled }}
           livenessProbe: {{ toYaml .Values.worker.livenessProbeSettings | nindent 12 }}
             exec:
               command:
                 - /bin/bash
                 - -c
-              {{- if (eq .Values.worker.autoscaling.enabled false) }}
-              # This liveness probe is only suitable if autoscaling is turned off as it can trigger upscaling
-                - 'if [[ "$(celery --app=saleor.celeryconf inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
-              {{- else if (eq .Values.worker.autoscaling.enabled true) }}
-                - 'echo "ready"'
-              {{- end }}
+                - >-
+                {{- if (eq .Values.worker.autoscaling.enabled false) }}
+                # This liveness probe is only suitable if autoscaling is turned off as it can trigger upscaling
+                  'if [[ "$(celery --app=saleor.celeryconf:app inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
+                {{- else if (eq .Values.worker.autoscaling.enabled true) }}
+                  'echo "ready"'
+                {{- end }}
+          {{- end }}
+          # Disabled by default due to issues with failures that need to be worked out
+          {{- if .Values.worker.readinessProbeSettings.enabled }}
           readinessProbe: {{ toYaml .Values.worker.readinessProbeSettings | nindent 12 }}
             exec:
               command:
                 - /bin/bash
                 - -c
-              {{- if (eq .Values.worker.autoscaling.enabled false) }}
-                # This readiness probe is only suitable if autoscaling is turned off as it can trigger upscaling
-                - 'if [[ "$(celery --app=saleor.celeryconf inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
-              {{- else if (eq .Values.worker.autoscaling.enabled true) }}
-                - 'echo "ready"'
-              {{- end }}
+                - >-
+                {{- if (eq .Values.worker.autoscaling.enabled false) }}
+                # This liveness probe is only suitable if autoscaling is turned off as it can trigger upscaling
+                  'if [[ "$(celery --app=saleor.celeryconf inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
+                {{- else if (eq .Values.worker.autoscaling.enabled true) }}
+                  'echo "ready"'
+                {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
       {{- with .Values.worker.nodeSelector }}

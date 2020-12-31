@@ -155,29 +155,6 @@ env:
   - name: EMAIL_URL
     value: "smtp://{{ $smtp.amazonSES.username }}:$(EMAIL_PASSWORD)@email-smtp.{{ $smtp.amazonSES.region }}.amazonaws.com:587/?tls=True"
 {{- end }}
-{{- if .Values.existingSecret }}
-  - name: RESTIC_PASSWORD
-    value: ""
-  - name: RESTIC_PASSWORD
-    value: ""
-{{- end }}
-{{- end }}
-
-
-  RESTIC_PASSWORD: {{ default (randAlphaNum 12) (.Values.backup.restic.password | b64enc | quote) }}
-  RESTIC_S3_ACCESS_KEY_ID: {{ default (randAlphaNum 12) (.Values.backup.restic.password | b64enc | quote) }}
-  RESTIC_S3_SECRET_ACCESS_KEY: {{ default (randAlphaNum 12) (.Values.backup.restic.password | b64enc | quote) }}
-
-{{/*
-Generate backup configuration
-*/}}
-{{- define "saleor-core.env.backup" -}}
-env:
-  - name: RESTIC_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: restic-password
-        key: RESTIC_PASSWORD
 {{- end }}
 
 

@@ -14,13 +14,13 @@ BRAINTREE_CURRENCIES=${11}
 BRAINTREE_REQUIRE_3D_SECURE=${12}
 
 function execute_plugin_sql_query() {
-    local postgresql_password=${1:-POSTGRESQL_PASSWORD}
-    local postgresql_host=${2:-POSTGRESQL_HOST}
-    local postgresql_port=${3:-POSTGRESQL_PORT}
-    local postgresql_user=${4:-POSTGRESQL_USER}
-    local postgresql_database=${5:-POSTGRESQL_DATABASE}
-    local jsonb=${6}
-    local identifier=${7}
+    local postgresql_password="${1}"
+    local postgresql_host="${2}"
+    local postgresql_port="${3}"
+    local postgresql_user="${4}"
+    local postgresql_database="${5}"
+    local jsonb="${6}"
+    local identifier="${7}"
 
     if [[ -z "${jsonb}" ]]; then
         echo "Variable jsonb is missing" >>/dev/stderr
@@ -55,12 +55,12 @@ EOF
 }
 
 function activate_vatlayer() {
-    local postgresql_password=${1:-POSTGRESQL_PASSWORD}
-    local postgresql_host=${2:-POSTGRESQL_HOST}
-    local postgresql_port=${3:-POSTGRESQL_PORT}
-    local postgresql_user=${4:-POSTGRESQL_USER}
-    local postgresql_database=${5:-POSTGRESQL_DATABASE}
-    local vatlayer_api_key=${6:-VATLAYER_API_KEY}
+    local postgresql_password="${1}"
+    local postgresql_host="${2}"
+    local postgresql_port="${3}"
+    local postgresql_user="${4}"
+    local postgresql_database="${5}"
+    local vatlayer_api_key="${6}"
     local jsonb
     local identifier
 
@@ -78,17 +78,17 @@ function activate_vatlayer() {
 }
 
 function activate_braintree() {
-    local postgresql_password=${1:-POSTGRESQL_PASSWORD}
-    local postgresql_host=${2:-POSTGRESQL_HOST}
-    local postgresql_port=${3:-POSTGRESQL_PORT}
-    local postgresql_user=${4:-POSTGRESQL_USER}
-    local postgresql_database=${5:-POSTGRESQL_DATABASE}
-    local braintree_private_key=${6:-BRAINTREE_PRIVATE_KEY}
-    local braintree_public_key=${7:-BRAINTREE_PUBLIC_KEY}
-    local braintree_sandbox_mode=${8:-BRAINTREE_SANDBOX_MODE}
-    local braintree_merchant_id=${9:-BRAINTREE_MERCHANT_ID}
-    local braintree_currencies=${10:-BRAINTREE_CURRENCIES}
-    local braintree_require_3d_secure=${11:-BRAINTREE_REQUIRE_3D_SECURE}
+    local postgresql_password="${1}"
+    local postgresql_host="${2}"
+    local postgresql_port="${3}"
+    local postgresql_user="${4}"
+    local postgresql_database="${5}"
+    local braintree_private_key="${6}"
+    local braintree_public_key="${7}"
+    local braintree_sandbox_mode="${8}"
+    local braintree_merchant_id="${9}"
+    local braintree_currencies="${10}"
+    local braintree_require_3d_secure="${11}"
     local jsonb
     local identifier
 

@@ -98,7 +98,9 @@ function install_docker() {
         sudo apt update -y -qq &&
         docker_version="$(sudo apt-cache madison docker-ce | grep "${release}" | head -1 | awk '{print $3}')" &&
         sudo apt-get install -y -qq --allow-downgrades docker-ce="${docker_version}" &&
-        sudo usermod -aG docker "${USER}"
+        if [[ -n "${USER}" ]]; then
+            sudo usermod -aG docker "${USER}"
+        fi
 }
 
 function install_docker_compose() {
