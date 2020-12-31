@@ -103,6 +103,72 @@ entries:
   saleor-platform:
   - apiVersion: v2
     appVersion: 2.11.1
+    created: "2020-12-31T21:43:09.568454525Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - database
+      version: 9.8.11
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - cache
+      version: 12.0.0
+    - condition: nfs.enabled
+      name: nfs-server-provisioner
+      repository: https://kvaps.github.io/charts
+      tags:
+      - nfs
+      version: 1.1.1
+    - condition: saleor-core.enabled
+      name: saleor-core
+      repository: https://eirenauts.github.io/saleor-k8s
+      tags:
+      - workers
+      - api
+      - web
+      version: 0.1.0
+    - condition: saleor-storefront.enabled
+      name: saleor-storefront
+      repository: https://eirenauts.github.io/saleor-k8s
+      tags:
+      - ui
+      - storefront
+      version: 0.1.0
+    - condition: saleor-dashboard.enabled
+      name: saleor-dashboard
+      repository: https://eirenauts.github.io/saleor-k8s
+      tags:
+      - ui
+      - dashboard
+      version: 0.1.0
+    description: A Helm chart for deploying the entire umbrella of saleor charts
+    digest: fab2582dfdd182131f5f9bf819e417b6c5391883c18f99a9953180f320814a00
+    home: https://github.com/eirenauts/saleor-k8s
+    keywords:
+    - saleor
+    - ecommerce
+    - graphql
+    - django
+    - single page app
+    kubeVersion: '>=1.9.0'
+    maintainers:
+    - email: stephen@stephenmoloney.com
+      name: Stephen Moloney
+      url: stephenmoloney.com
+    name: saleor-platform
+    sources:
+    - https://github.com/mirumee/saleor
+    - https://github.com/eirenauts/saleor-k8s
+    type: application
+    urls:
+    - https://github.com/eirenauts/saleor-k8s/releases/download/saleor-platform-0.1.0/saleor-platform-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
+    appVersion: 2.11.1
     created: "2020-12-27T10:11:51.990339595+01:00"
     dependencies:
     - condition: postgresql.enabled
