@@ -18,6 +18,7 @@
 - Collectstatic script and function was broken.
 - `init_helm` missing from init phase but the dependency is required
 - issue in bash script fixed on substituting the env variables on startup
+- fixed small issues in build pipeline with failures downloading chart repos
 
 ## saleor-platform-0.0.1
 

@@ -63,7 +63,8 @@
             K8S_AUTH_CONTEXT: "{{ k8s_auth_context }}"
           community.kubernetes.helm:
             atomic: false
-            chart_ref: https://eirenauts.github.io/saleor-k8s
+            chart_ref: saleor-k8s/saleor-platform
+            chart_version: 0.1.0
             wait: true
             wait_timeout: 20m0s
             release_name: saleor-platform
