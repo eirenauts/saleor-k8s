@@ -17,9 +17,13 @@ spec:
       app.kubernetes.io/component: web
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+        checksum/config-web: {{ include (print $.Template.BasePath "/configmap-web.yaml") . | sha256sum }}
+      {{- if not .Values.alternativeAppSettingsConfigMap }}
+      checksum/config-settings: {{ include (print $.Template.BasePath "/configmap-settings.yaml") . | sha256sum }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+      {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "saleor-core.selectorLabels" . | nindent 8 }}
@@ -38,21 +42,21 @@ spec:
         - name: custom-settings
           configMap:
           {{- if (not .Values.alternativeAppSettingsConfigMap) }}
-            name: {{ include "saleor-core.fullname" . }}-custom-settings
+          name: {{ include "saleor-core.fullname" . }}-custom-settings
           {{- else }}
-            name: {{ .Values.alternativeAppSettingsConfigMap }}
+          name: {{ .Values.alternativeAppSettingsConfigMap }}
           {{- end }}
         # Volume for the images and unstructured data
         - name: saleor-data-media
         {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingPvc }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingPvc }}
         {{- else if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ default (include "saleor-core.fullname" .) }}
+        persistentVolumeClaim:
+          claimName: {{ default (include "saleor-core.fullname" .) }}
         {{- else }}
-          emptyDir:
-            medium: Memory
+        emptyDir:
+          medium: Memory
         {{- end }}
         # ConfigMap for the nginx configuration and the static assets script
         - name: web-conf
@@ -60,8 +64,8 @@ spec:
             name: {{ include "saleor-core.fullname" . }}-web
         # Volume for the web assets data
         - name: saleor-data-static
-          emptyDir:
-            medium: Memory
+        emptyDir:
+          medium: Memory
       initContainers:
         # Wait for redis and postgresql to be ready
         - name: "{{- include "saleor-core.webContainerName" . }}-init-1"
@@ -124,11 +128,11 @@ spec:
               protocol: TCP
           livenessProbe: {{ toYaml .Values.web.livenessProbeSettings | nindent 12 }}
             httpGet:
-              path: /healthz
+              path: /static/images/placeholder60x60.png
               port: {{ int .Values.web.port | add1 }}
           readinessProbe: {{ toYaml .Values.web.readinessProbeSettings | nindent 12 }}
             httpGet:
-              path: /static/images/placeholder60x60.png
+              path: /healthz
               port:  {{ int .Values.web.port | add1 }}
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
@@ -144,4 +148,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}
+  {{- end }}

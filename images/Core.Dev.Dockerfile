@@ -38,8 +38,8 @@ ENV \
     # Restic configuration
     RESTIC_DOWNLOAD_URL=https://github.com/restic/restic/releases/download \
     RESTIC_VERSION=0.11.0 \
-    RESTIC_PASSWORD="" \
-    RESTIC_REPOSITORY="/restic-data/restic-repo"
+    RESTIC_PASSWORD="${RESTIC_PASSWORD:-}" \
+    RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-}"
 
 LABEL \
     \
@@ -64,7 +64,7 @@ RUN \
     \
     apt-get update -y && \
     apt-get install -y --no-install-recommends --allow-downgrades \
-      libxml2='2.9.4+dfsg1-7+deb10u1' \
+      libxml2='2.9.4+dfsg1-7+deb10u2' \
       libssl1.1='1.1.1d-0+deb10u3' \
       libcairo2='1.16.0-4' \
       libpango-1.0-0='1.42.4-8~deb10u1' \
@@ -106,8 +106,8 @@ RUN \
     useradd --uid "${UID}" --gid "${GUID}" --create-home saleor && \
     mkdir -p /app/media /app/static && \
     chown -R "${UID}:0" /app && \
-    mkdir -p "${RESTIC_REPOSITORY}" && \
-    chown -R "${UID}:0" "/$(echo "${RESTIC_REPOSITORY}" | cut -d "/" -f2)"
+    mkdir -p /restic-data/restic-repo && \
+    chown -R "${UID}:0" "/$(echo /restic-data/restic-repo | cut -d "/" -f2)"
 
 USER "${UID}"
 EXPOSE 8000

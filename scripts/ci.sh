@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck shell=bash disable=SC1090,SC2015
+# shellcheck shell=bash disable=SC1090,SC1091,SC2015
 
 function install_yarn() {
     sudo apt update -y -qq && sudo apt install -y -qq curl gnupg &&
@@ -167,6 +167,7 @@ function format_shell() {
         ! -path './saleor_storefront/**' \
         ! -path './saleor_dashboard/**' \
         -exec shfmt -l -w {} +
+    shfmt -l -w ./charts/saleor-core/config/backup.sh
 }
 
 function lint_yaml() {
@@ -183,6 +184,7 @@ function lint_shell() {
         ! -path './saleor_storefront/**' \
         ! -path './saleor_dashboard/**' \
         -exec shellcheck -x {} +
+    shellcheck -x ./charts/saleor-core/config/backup.sh
 }
 
 function lint_markdown() {
@@ -211,43 +213,25 @@ function get_image() {
     docker image ls --filter reference="*_${filter}" | awk 'NR==2{print $1}'
 }
 
-function get_branch_from_azure_devops_ci() {
-    if [[ -n "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" ]]; then
-        sed --regexp-extended 's|refs/heads/||g' <<<"${SYSTEM_PULLREQUEST_SOURCEBRANCH}"
-    elif [[ -n "${BUILD_SOURCEBRANCH}" ]]; then
-        sed --regexp-extended 's|refs/heads/||g' <<<"${BUILD_SOURCEBRANCH}"
-    fi
-}
-
-function get_git_branch() {
-    if [[ -z "$(get_branch_from_azure_devops_ci)" ]]; then
-        git branch --show-current
-    else
-        get_branch_from_azure_devops_ci
-    fi
-}
-
-function get_redacted_git_branch() {
-    sed --regexp-extended 's|\W|-|g' <<<"$(get_git_branch)"
-}
-
 function get_short_sha() {
     git rev-parse --short --quiet HEAD || echo "unknown"
 }
 
-function get_branch_from_azure_devops_ci() {
+function get_branch_from_ci() {
     if [[ -n "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" ]]; then
         sed --regexp-extended 's|refs/heads/||g' <<<"${SYSTEM_PULLREQUEST_SOURCEBRANCH}"
     elif [[ -n "${BUILD_SOURCEBRANCH}" ]]; then
         sed --regexp-extended 's|refs/heads/||g' <<<"${BUILD_SOURCEBRANCH}"
+    elif [[ -n "${CI_COMMIT_REF_NAME}" ]]; then
+        sed --regexp-extended 's|refs/heads/||g' <<<"${CI_COMMIT_REF_NAME}"
     fi
 }
 
 function get_git_branch() {
-    if [[ -z "$(get_branch_from_azure_devops_ci)" ]]; then
+    if [[ -z "$(get_branch_from_ci)" ]]; then
         git branch --show-current
     else
-        get_branch_from_azure_devops_ci
+        get_branch_from_ci
     fi
 }
 
@@ -359,7 +343,7 @@ function prepare_saleor_source() {
         git checkout "${saleor_release}" &&
         if [[ "${dockerfile}" == "Core.Dockerfile" ]] || [[ "${dockerfile}" == "Core.Dev.Dockerfile" ]]; then
             echo "Copying gunicorn config file into saleor repo" &&
-                cp ../images/config/gunicorn_conf.py "./saleor/gunicorn_conf.py"
+                cp ../images/config/gunicorn_conf.py ./saleor/gunicorn_conf.py
             echo "Removing unecessary static files" &&
                 rm ./saleor/static/populatedb_data.json &&
                 rm -rf ./saleor/static/placeholders

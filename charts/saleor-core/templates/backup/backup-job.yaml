@@ -1,0 +1,83 @@
+{{- if and .Values.executeBackupJob (or .Values.backup.database.enabled .Values.backup.media.enabled) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "saleor-core.fullname" . }}-backup-job
+  namespace: {{ .Release.Namespace }}
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 1200
+  ttlSecondsAfterFinished: 2400
+  parallelism: 1
+  completions: 1
+  template:
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "saleor-core.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        {{- toYaml .Values.backup.podSecurityContext | nindent 12 }}
+      volumes:
+        # Volume for the images and unstructured data
+        - name: saleor-data-media
+        {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingPvc }}
+        {{- else if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "saleor-core.fullname" .) }}
+        {{- else }}
+          emptyDir:
+            medium: Memory
+        {{- end }}
+        # ConfigMap for the backup script
+        - name: backup
+          configMap:
+            name: {{ include "saleor-core.fullname" . }}-backup
+      initContainers:
+        # Wait for successful response from postgresql
+        - name: "{{ include "saleor-core.fullname" . }}-backup-job-init"
+          securityContext:
+            {{- toYaml .Values.backup.containerSecurityContext | nindent 12 }}
+          {{- include "saleor-core.env" . | indent 10 }}
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default (cat "dev-" .Chart.AppVersion) | nospace }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - >
+              {{ include "saleor.postgresql.isReady" . | nindent 14 }}
+      containers:
+        - name: "{{ include "saleor-core.fullname" . }}-backup-job"
+          volumeMounts:
+            - name: saleor-data-media
+              mountPath: /app/media
+            - name: backup
+              mountPath: /home/saleor/backup.sh
+              subPath: backup.sh
+              readOnly: true
+          securityContext:
+            {{- toYaml .Values.backup.containerSecurityContext | nindent 12 }}
+          {{- include "saleor-core.env" . | indent 10 }}
+          {{- include "saleor-core.env.backup" . | indent 10 }}
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default (cat "dev-" .Chart.AppVersion) | nospace }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - /home/saleor/backup.sh
+          args:
+            - 'true'
+            - '$(POSTGRESQL_PASSWORD)'
+            - '$(POSTGRESQL_HOST)'
+            - '$(POSTGRESQL_PORT)'
+            - '$(POSTGRESQL_USER)'
+            - '$(POSTGRESQL_DATABASE)'
+            - '$(POSTGRESQL_ADDITIONAL_ARGS)'
+            - 'true'
+            - '$(RESTIC_GLOBAL_ARGS)'
+            - '$(RESTIC_HOST)'
+      restartPolicy: Never
+{{- end }}

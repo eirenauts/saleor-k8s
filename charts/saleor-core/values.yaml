@@ -448,3 +448,52 @@ jobs:
       backOffLimit: 1
       ttlSecondsAfterFinished: 120
       weight: 5
+      jobDuration: 60s
+
+## Backup settings
+
+backup:
+  ## If database backups are enabled, it will perform a simple pg_dump on the postgresql database
+  database:
+    enabled: false
+    additionalArgs: "--verbose --data-only --blobs "
+
+  ## If media backups are enabled, it will perform a tar operation of the /app/media directory
+  ## Not to be enabled if using cloudstorage enabled backends
+  media:
+    enabled: false
+
+  ## Upload to s3 configuration using restic. For now only, s3 compliant storage api is supported.
+  restic:
+    # Set the password using a secret called RESTIC_PASSWORD
+    password:
+    additionalGlobalArgs: "--no-cache --verbose "
+    hostname: "saleor-k8s"
+    s3:
+      # Set the s3 key id as RESTIC_S3_ACCESS_KEY_ID in a secret
+      keyId:
+      # Set the s3 secret key as RESTIC_S3_SECRET_ACCESS_KEY in a secret
+      keySecret:
+      endpointUrl:
+      region: "eu-west-1"
+      bucketName:
+      # Set repositoryUrlOverride to set the full s3 repository url manually
+      repositoryUrlOverride:
+
+  cron:
+    enabled: false
+    schedule: "0 6 * * *"
+
+  podSecurityContext:
+    runAsNonRoot: false
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+
+  containerSecurityContext:
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false
+    # capabilities:
+    #   drop:
+    #     - ALL
+    # readOnlyRootFilesystem: true

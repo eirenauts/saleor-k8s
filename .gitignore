@@ -8,6 +8,8 @@ saleor_storefront
 charts/saleor-platform/charts
 charts/saleor-platform/tmpcharts
 charts/saleor-platform/Chart.lock
+charts/saleor-platform/ChartBak.yaml
+chart-releaser_*
 downloads
 *-x86_64
 index.yaml
