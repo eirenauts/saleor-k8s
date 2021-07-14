@@ -15,9 +15,12 @@ spec:
       app.kubernetes.io/component: api
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+      {{- if not .Values.alternativeAppSettingsConfigMap }}
+        checksum/config-settings: {{ include (print $.Template.BasePath "/configmap-settings.yaml") . | sha256sum }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+      {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "saleor-core.selectorLabels" . | nindent 8 }}
@@ -36,21 +39,21 @@ spec:
         - name: custom-settings
           configMap:
           {{- if (not .Values.alternativeAppSettingsConfigMap) }}
-            name: {{ include "saleor-core.fullname" . }}-custom-settings
+          name: {{ include "saleor-core.fullname" . }}-custom-settings
           {{- else }}
-            name: {{ .Values.alternativeAppSettingsConfigMap }}
+          name: {{ .Values.alternativeAppSettingsConfigMap }}
           {{- end }}
         # Volume for the images and unstructured data
         - name: saleor-data-media
         {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingPvc }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingPvc }}
         {{- else if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ default (include "saleor-core.fullname" .) }}
+        persistentVolumeClaim:
+          claimName: {{ default (include "saleor-core.fullname" .) }}
         {{- else }}
-          emptyDir:
-            medium: Memory
+        emptyDir:
+          medium: Memory
         {{- end }}
       initContainers:
         # Wait for successful response from redis and postgresql

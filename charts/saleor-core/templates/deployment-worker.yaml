@@ -16,9 +16,13 @@ spec:
       app.kubernetes.io/component: worker
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+        checksum/config-web: {{ include (print $.Template.BasePath "/configmap-web.yaml") . | sha256sum }}
+      {{- if not .Values.alternativeAppSettingsConfigMap }}
+        checksum/config-settings: {{ include (print $.Template.BasePath "/configmap-settings.yaml") . | sha256sum }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+      {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "saleor-core.selectorLabels" . | nindent 8 }}
@@ -37,9 +41,9 @@ spec:
         - name: custom-settings
           configMap:
           {{- if (not .Values.alternativeAppSettingsConfigMap) }}
-            name: {{ include "saleor-core.fullname" . }}-custom-settings
+          name: {{ include "saleor-core.fullname" . }}-custom-settings
           {{- else }}
-            name: {{ .Values.alternativeAppSettingsConfigMap }}
+          name: {{ .Values.alternativeAppSettingsConfigMap }}
           {{- end }}
         # ConfigMap for the nginx configuration and the static assets script
         - name: web-conf
@@ -48,14 +52,14 @@ spec:
         # Volume for the images and unstructured data
         - name: saleor-data-media
         {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingPvc }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingPvc }}
         {{- else if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ default (include "saleor-core.fullname" .) }}
+        persistentVolumeClaim:
+          claimName: {{ default (include "saleor-core.fullname" .) }}
         {{- else }}
-          emptyDir:
-            medium: Memory
+        emptyDir:
+          medium: Memory
         {{- end }}
         # Volume for the web assets data
         - name: saleor-data-static
@@ -125,18 +129,18 @@ spec:
             - --heartbeat-interval={{ .Values.worker.heartBeatIntervalSeconds }}
             - --loglevel={{ .Values.worker.logLevel }}
           {{- if (eq (.Values.worker.concurrency.type) "fixed") }}
-            - --concurrency={{ .Values.worker.concurrency.fixed }}
+          - --concurrency={{ .Values.worker.concurrency.fixed }}
           {{- else if (eq (.Values.worker.concurrency.type) "auto") }}
-            - --autoscale={{ .Values.worker.concurrency.autoMaximum }},{{ .Values.worker.concurrency.autoMinimum }}
+          - --autoscale={{ .Values.worker.concurrency.autoMaximum }},{{ .Values.worker.concurrency.autoMinimum }}
           {{- end }}
           {{- if (.Values.worker.hardTimeLimitSeconds) }}
-            - --time-limit={{ .Values.worker.hardTimeLimitSeconds }}
+          - --time-limit={{ .Values.worker.hardTimeLimitSeconds }}
           {{- end }}
           {{- if (.Values.worker.softTimeLimitSeconds) }}
-            - --soft-time-limit={{ .Values.worker.softTimeLimitSeconds }}
+          - --soft-time-limit={{ .Values.worker.softTimeLimitSeconds }}
           {{- end }}
           {{- if (eq .Values.worker.taskEventsMonitoring.enabled true) }}
-            - --task-events
+          - --task-events
           {{- end }}
           # Disabled by default due to issues with failures that need to be worked out
           {{- if .Values.worker.livenessProbeSettings.enabled }}
@@ -148,9 +152,9 @@ spec:
                 - >-
                 {{- if (eq .Values.worker.autoscaling.enabled false) }}
                 # This liveness probe is only suitable if autoscaling is turned off as it can trigger upscaling
-                  'if [[ "$(celery --app=saleor.celeryconf:app inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
+                'if [[ "$(celery --app=saleor.celeryconf:app inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
                 {{- else if (eq .Values.worker.autoscaling.enabled true) }}
-                  'echo "ready"'
+                'echo "ready"'
                 {{- end }}
           {{- end }}
           # Disabled by default due to issues with failures that need to be worked out
@@ -163,9 +167,9 @@ spec:
                 - >-
                 {{- if (eq .Values.worker.autoscaling.enabled false) }}
                 # This liveness probe is only suitable if autoscaling is turned off as it can trigger upscaling
-                  'if [[ "$(celery --app=saleor.celeryconf inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
+                'if [[ "$(celery --app=saleor.celeryconf inspect ping | grep pong)" == *"pong"* ]]; then exit 0; else exit 1; fi && echo "ready"'
                 {{- else if (eq .Values.worker.autoscaling.enabled true) }}
-                  'echo "ready"'
+                'echo "ready"'
                 {{- end }}
           {{- end }}
           resources:

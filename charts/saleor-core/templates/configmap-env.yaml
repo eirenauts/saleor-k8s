@@ -13,12 +13,12 @@
 {{- $tls_hosts := $tls.hosts | join  "," }}
 
 # Collect all types of ingress hosts into a deduplicated list
-{{- $ingress_hosts := cat $http_hosts $tls_hosts | replace " " "," | splitList "," | uniq | join "," | trimAll "," }}
+{{- $ingress_hosts := printf "%v,%v" $http_hosts $tls_hosts | splitList "," | uniq | join "," | trimAll "," }}
 {{- $ingress_hosts_client := $ingress_hosts | replace "core." "" }}
 
 # Collect values hosts and ingress hosts into a deduplicated list
-{{- $allowed_hosts := empty .Values.allowedHosts.hosts | ternary "" (cat (.Values.allowedHosts.hosts | join "," | trimAll ",") $ingress_hosts | replace " " "," | splitList "," | uniq | join ",") }}
-{{- $all_hosts := empty $allowed_hosts | ternary $ingress_hosts (cat $allowed_hosts $ingress_hosts | replace " " "," | splitList "," | uniq | join ",") }}
+{{- $allowed_hosts := empty .Values.allowedHosts.hosts | ternary "" (printf "%v,%v" (.Values.allowedHosts.hosts | join "," | trimAll ",") $ingress_hosts | splitList "," | uniq | join ",") }}
+{{- $all_hosts := empty $allowed_hosts | ternary $ingress_hosts (printf "%v,%v" $allowed_hosts $ingress_hosts | splitList "," | uniq | join ",") }}
 {{- $all_hosts_client := empty $allowed_hosts | ternary $ingress_hosts_client ($all_hosts | replace "core." "" | splitList "," | uniq | join ",") }}
 
 apiVersion: v1
@@ -87,7 +87,6 @@ data:
   GUNICORN_LOG_LEVEL: {{ .Values.api.gunicorn.log_level | quote }}
   GUNICORN_FORWARDED_ALLOW_IPS: {{ .Values.api.gunicorn.forwarded_allow_ips | quote }}
   GUNICORN_PROXY_ALLOW_IPS: {{ .Values.api.gunicorn.proxy_allow_ips | quote }}
-  GUNICORN_BIND_TEST_TEST_TEST_TEST: {{ .Values.api.gunicorn.host | quote }}
   GUNICORN_BIND_HOST: {{ .Values.api.gunicorn.host | quote }}
   GUNICORN_BIND_PORT: {{ .Values.api.gunicorn.port | quote }}
   GUNICORN_BACKLOG: {{ .Values.api.gunicorn.backlog | quote }}
@@ -161,3 +160,16 @@ data:
   BRAINTREE_REQUIRE_3D_SECURE: {{ .Values.externalServices.braintree.require3DSecure | quote }}
 {{- end }}
 
+
+  ### Restic backups
+{{- if or .Values.backup.database.enabled .Values.backup.media.enabled }}
+{{- if .Values.backup.restic.s3.repositoryUrlOverride }}
+  RESTIC_REPOSITORY: {{ .Values.backup.restic.s3.repositoryUrlOverride | quote }}
+{{- else }}
+  RESTIC_REPOSITORY: {{ printf "s3:https://%v/%v" .Values.backup.restic.s3.endpointUrl .Values.backup.restic.s3.bucketName }}
+{{- end }}
+  RESTIC_S3_REGION: {{ .Values.backup.restic.s3.region | quote }}
+  RESTIC_GLOBAL_ARGS: {{ .Values.backup.restic.additionalGlobalArgs | quote }}
+  RESTIC_HOST: {{ .Values.backup.restic.hostname | quote }}
+  POSTGRESQL_ADDITIONAL_ARGS: {{ .Values.backup.database.additionalArgs | quote }}
+{{- end }}

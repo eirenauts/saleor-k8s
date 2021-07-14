@@ -57,13 +57,13 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 RUN \
     apt-get update -y && \
     apt-get install -y --no-install-recommends --allow-downgrades \
-      libxml2='2.9.4+dfsg1-7+deb10u1' \
-      libssl1.1='1.1.1d-0+deb10u3' \
-      libcairo2='1.16.0-4' \
+      libxml2='2.9.4+dfsg1-7+deb10u2' \
+      libssl1.1='1.1.1d-0+deb10u6' \
+      libcairo2='1.16.0-4+deb10u1' \
       libpango-1.0-0='1.42.4-8~deb10u1' \
       libpangocairo-1.0-0='1.42.4-8~deb10u1' \
       libgdk-pixbuf2.0-0='2.38.1+dfsg-1' \
-      libmagic1='1:5.35-4+deb10u1' \
+      libmagic1='1:5.35-4+deb10u2' \
       shared-mime-info='1.10-1' \
       mime-support='3.62' && \
     apt-get clean && \

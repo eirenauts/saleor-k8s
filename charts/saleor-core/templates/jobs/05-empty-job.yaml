@@ -60,5 +60,5 @@ spec:
             - /bin/bash
             - -c
             - >-
-              sleep 280s
+              sleep {{ $thisJob.jobDuration }}
 {{- end }}

@@ -64,7 +64,7 @@
           community.kubernetes.helm:
             atomic: false
             chart_ref: saleor-k8s/saleor-platform
-            chart_version: 0.1.0
+            chart_version: 0.1.1
             wait: true
             wait_timeout: 20m0s
             release_name: saleor-platform

@@ -38,8 +38,8 @@ ENV \
     # Restic configuration
     RESTIC_DOWNLOAD_URL=https://github.com/restic/restic/releases/download \
     RESTIC_VERSION=0.11.0 \
-    RESTIC_PASSWORD="" \
-    RESTIC_REPOSITORY="/restic-data/restic-repo"
+    RESTIC_PASSWORD="${RESTIC_PASSWORD:-}" \
+    RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-}"
 
 LABEL \
     \
@@ -64,13 +64,13 @@ RUN \
     \
     apt-get update -y && \
     apt-get install -y --no-install-recommends --allow-downgrades \
-      libxml2='2.9.4+dfsg1-7+deb10u1' \
-      libssl1.1='1.1.1d-0+deb10u3' \
-      libcairo2='1.16.0-4' \
+      libxml2='2.9.4+dfsg1-7+deb10u2' \
+      libssl1.1='1.1.1d-0+deb10u6' \
+      libcairo2='1.16.0-4+deb10u1' \
       libpango-1.0-0='1.42.4-8~deb10u1' \
       libpangocairo-1.0-0='1.42.4-8~deb10u1' \
       libgdk-pixbuf2.0-0='2.38.1+dfsg-1' \
-      libmagic1='1:5.35-4+deb10u1' \
+      libmagic1='1:5.35-4+deb10u2' \
       shared-mime-info='1.10-1' \
       mime-support='3.62' && \
     apt-get install -y --no-install-recommends \
@@ -82,7 +82,7 @@ RUN \
       tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends \
-      postgresql-client-12='12.5-1.pgdg100+1' \
+      postgresql-client-12='12.7-1.pgdg100+1' \
       redis-tools='5:5.0.3-4+deb10u2' && \
     apt-get install -y --no-install-recommends \
         bzip2='1.0.6-9.2~deb10u1' && \
@@ -106,8 +106,8 @@ RUN \
     useradd --uid "${UID}" --gid "${GUID}" --create-home saleor && \
     mkdir -p /app/media /app/static && \
     chown -R "${UID}:0" /app && \
-    mkdir -p "${RESTIC_REPOSITORY}" && \
-    chown -R "${UID}:0" "/$(echo "${RESTIC_REPOSITORY}" | cut -d "/" -f2)"
+    mkdir -p /restic-data/restic-repo && \
+    chown -R "${UID}:0" "/$(echo /restic-data/restic-repo | cut -d "/" -f2)"
 
 USER "${UID}"
 EXPOSE 8000

@@ -107,6 +107,12 @@ env:
 {{- if .Values.existingSecret }}
   - name: SECRET_KEY
     value: "$(SALEOR_SECRET_KEY)"
+  - name: RESTIC_PASSWORD
+    value: ""
+  - name: RESTIC_S3_ACCESS_KEY_ID
+    value: ""
+  - name: RESTIC_S3_SECRET_ACCESS_KEY
+    value: ""
 {{- end }}
 {{- if and .Values.jobs.init.plugins.enabled .Values.externalServices.vatLayer.enabled }}
   - name: VATLAYER_API_KEY
@@ -154,6 +160,42 @@ env:
 {{- else if $smtp.amazonSES.enabled }}
   - name: EMAIL_URL
     value: "smtp://{{ $smtp.amazonSES.username }}:$(EMAIL_PASSWORD)@email-smtp.{{ $smtp.amazonSES.region }}.amazonaws.com:587/?tls=True"
+{{- end }}
+{{- end }}
+
+
+{{/*
+Generate backup configuration
+*/}}
+{{- define "saleor-core.env.backup" -}}
+{{- if or .Values.backup.database.enabled .Values.backup.media.enabled }}
+  - name: RESTIC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+      {{- if not .Values.existingSecret }}
+        name: {{ include "saleor-core.fullname" . }}
+      {{- else }}
+        name: {{ .Values.existingSecret }}
+      {{- end }}
+        key: RESTIC_PASSWORD
+  - name: RESTIC_S3_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+      {{- if not .Values.existingSecret }}
+        name: {{ include "saleor-core.fullname" . }}
+      {{- else }}
+        name: {{ .Values.existingSecret }}
+      {{- end }}
+        key: RESTIC_S3_ACCESS_KEY_ID
+  - name: RESTIC_S3_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+      {{- if not .Values.existingSecret }}
+        name: {{ include "saleor-core.fullname" . }}
+      {{- else }}
+        name: {{ .Values.existingSecret }}
+      {{- end }}
+        key: RESTIC_S3_SECRET_ACCESS_KEY
 {{- end }}
 {{- end }}
 
