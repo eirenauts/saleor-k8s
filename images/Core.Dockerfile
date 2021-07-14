@@ -63,7 +63,7 @@ RUN \
       libpango-1.0-0='1.42.4-8~deb10u1' \
       libpangocairo-1.0-0='1.42.4-8~deb10u1' \
       libgdk-pixbuf2.0-0='2.38.1+dfsg-1' \
-      libmagic1='1:5.35-4+deb10u1' \
+      libmagic1='1:5.35-4+deb10u2' \
       shared-mime-info='1.10-1' \
       mime-support='3.62' && \
     apt-get clean && \
