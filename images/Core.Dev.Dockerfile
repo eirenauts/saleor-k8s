@@ -82,7 +82,7 @@ RUN \
       tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends \
-      postgresql-client-12='12.5-1.pgdg100+1' \
+      postgresql-client-12='12.7-1.pgdg100+1' \
       redis-tools='5:5.0.3-4+deb10u2' && \
     apt-get install -y --no-install-recommends \
         bzip2='1.0.6-9.2~deb10u1' && \
