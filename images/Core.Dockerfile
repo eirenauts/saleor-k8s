@@ -59,7 +59,7 @@ RUN \
     apt-get install -y --no-install-recommends --allow-downgrades \
       libxml2='2.9.4+dfsg1-7+deb10u2' \
       libssl1.1='1.1.1d-0+deb10u6' \
-      libcairo2='1.16.0-4' \
+      libcairo2='1.16.0-4+deb10u1' \
       libpango-1.0-0='1.42.4-8~deb10u1' \
       libpangocairo-1.0-0='1.42.4-8~deb10u1' \
       libgdk-pixbuf2.0-0='2.38.1+dfsg-1' \
