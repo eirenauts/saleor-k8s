@@ -45,16 +45,16 @@ spec:
           {{- end }}
         # Volume for the images and unstructured data
         - name: saleor-data-media
-        {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
-        persistentVolumeClaim:
-          claimName: {{ .Values.persistence.existingPvc }}
-        {{- else if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ default (include "saleor-core.fullname" .) }}
-        {{- else }}
-        emptyDir:
-          medium: Memory
-        {{- end }}
+          {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingPvc }}
+          {{- else if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "saleor-core.fullname" .) }}
+          {{- else }}
+          emptyDir:
+            medium: Memory
+          {{- end }}
       initContainers:
         # Wait for successful response from redis and postgresql
         - name: "{{- include "saleor-core.apiContainerName" . }}-init-1"

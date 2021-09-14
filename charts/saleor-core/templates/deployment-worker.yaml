@@ -51,16 +51,16 @@ spec:
             name: {{ include "saleor-core.fullname" . }}-web
         # Volume for the images and unstructured data
         - name: saleor-data-media
-        {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
-        persistentVolumeClaim:
-          claimName: {{ .Values.persistence.existingPvc }}
-        {{- else if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ default (include "saleor-core.fullname" .) }}
-        {{- else }}
-        emptyDir:
-          medium: Memory
-        {{- end }}
+          {{- if and .Values.persistence.enabled .Values.persistence.existingPvc }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingPvc }}
+          {{- else if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "saleor-core.fullname" .) }}
+          {{- else }}
+          emptyDir:
+            medium: Memory
+          {{- end }}
         # Volume for the web assets data
         - name: saleor-data-static
           emptyDir:
@@ -128,20 +128,20 @@ spec:
             - --without-mingle
             - --heartbeat-interval={{ .Values.worker.heartBeatIntervalSeconds }}
             - --loglevel={{ .Values.worker.logLevel }}
-          {{- if (eq (.Values.worker.concurrency.type) "fixed") }}
-          - --concurrency={{ .Values.worker.concurrency.fixed }}
-          {{- else if (eq (.Values.worker.concurrency.type) "auto") }}
-          - --autoscale={{ .Values.worker.concurrency.autoMaximum }},{{ .Values.worker.concurrency.autoMinimum }}
-          {{- end }}
-          {{- if (.Values.worker.hardTimeLimitSeconds) }}
-          - --time-limit={{ .Values.worker.hardTimeLimitSeconds }}
-          {{- end }}
-          {{- if (.Values.worker.softTimeLimitSeconds) }}
-          - --soft-time-limit={{ .Values.worker.softTimeLimitSeconds }}
-          {{- end }}
-          {{- if (eq .Values.worker.taskEventsMonitoring.enabled true) }}
-          - --task-events
-          {{- end }}
+            {{- if (eq (.Values.worker.concurrency.type) "fixed") }}
+            - --concurrency={{ .Values.worker.concurrency.fixed }}
+            {{- else if (eq (.Values.worker.concurrency.type) "auto") }}
+            - --autoscale={{ .Values.worker.concurrency.autoMaximum }},{{ .Values.worker.concurrency.autoMinimum }}
+            {{- end }}
+            {{- if (.Values.worker.hardTimeLimitSeconds) }}
+            - --time-limit={{ .Values.worker.hardTimeLimitSeconds }}
+            {{- end }}
+            {{- if (.Values.worker.softTimeLimitSeconds) }}
+            - --soft-time-limit={{ .Values.worker.softTimeLimitSeconds }}
+            {{- end }}
+            {{- if (eq .Values.worker.taskEventsMonitoring.enabled true) }}
+            - --task-events
+            {{- end }}
           # Disabled by default due to issues with failures that need to be worked out
           {{- if .Values.worker.livenessProbeSettings.enabled }}
           livenessProbe: {{ toYaml .Values.worker.livenessProbeSettings | nindent 12 }}
