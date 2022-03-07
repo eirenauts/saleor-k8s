@@ -6,7 +6,7 @@ description: A Helm chart for deploying the saleor core application in Kubernete
 type: application
 version: 0.1.1
 appVersion: 2.11.4
-kubeVersion: ">=1.9.0"
+kubeVersion: ""
 keywords:
   - saleor
   - ecommerce
